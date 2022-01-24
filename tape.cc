@@ -1,4 +1,4 @@
-// https://github.com/ProfAvery/cpsc439/blob/master/1-tape-palindrome.c
+// Credit Source: https://github.com/ProfAvery/cpsc439/blob/master/1-tape-palindrome.c
 
 #include <stdio.h>
 #include <stdbool.h> // Requires C99 or later
