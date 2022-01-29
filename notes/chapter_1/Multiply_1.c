@@ -1,3 +1,5 @@
+/* simple multipliciation via repeated additions */
+
 #include <stdio.h>
 #include <stdlib.h>
 
