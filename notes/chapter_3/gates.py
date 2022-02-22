@@ -20,21 +20,17 @@ def XOR(a, b):
 
 def XOR3(a, b, c): return XOR(XOR(a, b), c)
 def NAND(a, b):
-<<<<<<< HEAD:notes/chapter_3/gates.py
     return NOT(AND(NOT(AND(a, b)), NOT(AND(a, b)))) or \
            NOT(AND(NOT(AND(a, a)), NOT(AND(b, b)))) or \
            NOT(AND(NOT(a), NOT(b)))                 or \
            NOT(AND(a, a))
 
 def ALLEQ(a, b, c, d):
-=======
     return NOT(AND( NOT(AND( a, a )), NOT(AND( b, b )))) or \
            NOT(AND(NOT(a), NOT(b)))                      or \
            NOT(AND(a, a))
-            
 
-def ALLEQ(a, b, c, d): 
->>>>>>> fcc96db1de622ee4c06007e1f55e9e59d6cc49b5:notes/chapter_1/gates.py
+def ALLEQ(a, b, c, d):
     reg = AND(AND(AND(a, b), c), d)
     return OR(reg, NOT(reg))
 
