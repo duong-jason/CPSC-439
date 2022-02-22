@@ -5,15 +5,15 @@
 #include <math.h>
 
 int main(int argc, char** argv) {
-    int x, y, z = 0;
+    long long x, y, z = 0;
 
     if (argc == 3 && (x = atoi(argv[1])) && (y = atoi(argv[2]))) {
-        printf("%d * %d", x, y);
+        printf("%lld * %lld", x, y);
 
         const size_t n = log10(x) + 1;
         const size_t m = log10(y) + 1;
-        int* xptr = (int*) malloc(sizeof(int) * n);
-        int* yptr = (int*) malloc(sizeof(int) * m);
+        long long* xptr = (long long*) malloc(sizeof(long long) * n);
+        long long* yptr = (long long*) malloc(sizeof(long long) * m);
 
         int i = 0, j = 0;
         while (x > 0) {
@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
             }
         }
 
-        printf(" = %d\n", z);
+        printf(" = %lld\n", z);
 
         free(xptr);
         free(yptr);

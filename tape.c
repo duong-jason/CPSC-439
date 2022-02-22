@@ -217,7 +217,7 @@ int main(void) {
 
     bool accept = delta();
 
-    printf("%s\n", (accept ? "ACCEPT" : "REJECT");
+    printf("%s\n", (accept ? "ACCEPT" : "REJECT"));
 
     print_tapes();
 }

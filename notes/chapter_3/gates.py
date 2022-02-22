@@ -19,7 +19,13 @@ def XOR(a, b):
     return AND(w2, w3)
 
 def XOR3(a, b, c): return XOR(XOR(a, b), c)
-def ALLEQ(a, b, c, d): 
+def NAND(a, b):
+    return NOT(AND(NOT(AND(a, b)), NOT(AND(a, b)))) or \
+           NOT(AND(NOT(AND(a, a)), NOT(AND(b, b)))) or \
+           NOT(AND(NOT(a), NOT(b)))                 or \
+           NOT(AND(a, a))
+
+def ALLEQ(a, b, c, d):
     reg = AND(AND(AND(a, b), c), d)
     return OR(reg, NOT(reg))
 
@@ -33,19 +39,19 @@ def MAJ(X, Y, Z):
     thirdpair  = AND(X, Z)
     temp       = OR(secondpair, thirdpair)
     return OR(firstpair, temp)
-    
+
 print("MAJ(0, 1, 1) = ", MAJ(0, 1, 1))
 
-def BOOLEAN_CIRCUIT(X: tuple)
+def BOOLEAN_CIRCUIT(X: tuple):
     layer: list  # list of the minimal layering
     output: list # list of outputs
-    gate = ["^": AND, "v": OR, "~": NOT] # list of logic gates
+    gate = { "^": AND, "v": OR, "~": NOT } # list of logic gates
 
     for i, v in enumerate(layer):
         if v in X: # v is an input vertex
             v = X[i]
         elif v in gate: # v is a gate
-            match gate[v]
+            match gate[v]:
                 case "^":
                     v = AND(X[i-1], X[i])
                 case "v":
@@ -62,7 +68,7 @@ def CMP(X: tuple):
     a > c OR (a >= c AND b > d)
     """
     # check if c1 > c2
-    t1 = NOT(X[2]
+    t1 = NOT(X[2])
     t2 = AND(X[0], t1)
     # check if c1 >= c2
     t3 = OR(X[0], t1)
