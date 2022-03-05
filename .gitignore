@@ -1,6 +1,9 @@
 # Prerequisites
 *.d
 
+# Jupyter Notebook files
+*.ipynb_checkpoints
+
 # Object files
 *.o
 *.ko
