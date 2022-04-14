@@ -4,7 +4,8 @@
 import dfa
 
 
-q0, q1, q2, q3, q4, q5, q6, q7 = list(range(8))
+Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8 = list(range(1, 9))
+model, input, work, state = 0, 1, 2, 3
 
 
 class HaltExecution(Exception):
@@ -71,42 +72,36 @@ class TuringMachine:
         self.head = max(-1, self.head - 1)
 
     def init_tape(self, stream: str):
-        tape, pos = [[], [], [], [q0]], 0
+        tape, pos = [[], [], [], [Q1]], 0
         for head in range(len(stream)):
             if stream[head] == '_': pos += 1
-            else: tape[pos].append(stream[head])
+            else: tape[pos].append(int(stream[head]))
         return tape
 
-    def set(self, tape=None):
-        if tape == 'dfa':
-            self.active = 0
-        elif tape == 'input':
-            self.active = 1
-        elif tape == 'work':
-            self.active = 2
-        elif tape == 'state':
-            self.active = 3
-
-    def get(self, tape=None):
-        self.set(tape)
-        self.__next__()
-        return self.symbol
-
-    def rewind(self, tape=None):
+    def rewind_tape(self, tape=None):
         '''resets the head position for the working tape'''
-        self.set(tape)
         while self.head != -1:
             self.__prev__()
 
+    def get_tape(self, tape=None):
+        self.active = tape
+        self.__next__()
+        return self.symbol
+
+    def write_tape(self, tape=None, value=0):
+        self.active = tape
+        if self.head > len(self.tape):
+            self.tape.append('*')
+        self.head = value
+
     def transition(self, state, symbol):
-        self.set('dfa')
+        self.active = model
 
-        print('>>>', state, symbol)
+        if (state, symbol) == (Q1, 1):
+            self.active = work
+            self.write_tape(state, Q2)
 
-        #if state == q0:
-        #elif state == q1:
-
-
+        return self.get_tape(state), self.get_tape(input)
 
         '''
         (1)0(1)0[1]0   (1)0(11)0[11]0  (11)0(1)0[11]0   (11)0(11)0[1]0    00    [11]
@@ -121,8 +116,8 @@ class TuringMachine:
 
         dfa:     [10101000110101101100011011010110001101101101000110]
         input:   [0 010101]
-        working: [1 ]
-        state:   [0 ]
+        working: []
+        state:   [1]
 
 
         working {
@@ -145,7 +140,7 @@ class TuringMachine:
         '''executes the turing machine'''
         try:
             while True:
-                self.transition(self.get('state'), self.get('input'))
+                self.transition(self.get_tape(state), self.get_tape(input) + 1)
                 break
 
                 if action == 'L':
@@ -162,6 +157,6 @@ class TuringMachine:
 
 
 if __name__ == '__main__':
-    input = '0010101'
-    M = TuringMachine(f'{dfa.xor!r}_{input}')
+    source = '0010101'
+    M = TuringMachine(f'{dfa.xor!r}_{source}')
     M.run()
