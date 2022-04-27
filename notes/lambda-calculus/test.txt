@@ -5,5 +5,3 @@ e4 = pair one (pair one (pair zero nil))
 
 dfa = pair e1 (pair e2 (pair e3 (pair e4 nil)))
 input = pair one (pair zero (pair one (pair one (pair zero))))
-
-env
