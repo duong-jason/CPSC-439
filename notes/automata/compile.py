@@ -163,10 +163,8 @@ class TM:
 
 
     def REWIND_STATE(self):
-        if self.tape(0) != START:
-            self.move('<---')
-        else:
-            self._state = "START"
+        if self.T("▷---", "----", "----", "START"): return
+        if self.T("----", "----", "<---", "REWIND_STATE"): return
 
 
     def START(self):
@@ -235,6 +233,8 @@ class TM:
         if self.T("1--C", "---D", ">---", "GET_STATE"): return
         if self.T("1--D", "---E", ">---", "GET_STATE"): return
         if self.T("1--E", "---F", ">---", "GET_STATE"): return
+        # something wrong here :w
+
         if self.T("1--F", "---G", ">---", "GET_STATE"): return
         if self.T("1--G", "---H", ">---", "GET_STATE"): return
         if self.T("1--H", "----", "----", "REJECT"): return
@@ -263,8 +263,6 @@ class TM:
 
     def run(self):
         """Executes the turing machine"""
-        counter = 0
-
         state = {
             "SETUP_TAPE": self.SETUP_TAPE,
             "REWIND_STATE": self.REWIND_STATE,
@@ -305,6 +303,6 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    XOR_TM = TM(f'{XOR_DFA}#{sys.argv[1]}')
+    XOR_TM = TM(f'{TEST}#{sys.argv[1]}')
     XOR_TM.run()
 
