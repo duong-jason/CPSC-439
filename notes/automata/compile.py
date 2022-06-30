@@ -7,6 +7,7 @@ from encode import *
 
 K = 4
 SHOW_HEAD = True
+SLOW, MEDIUM, FAST = 0.5, 0.01, 0.001
 
 START = '▷'
 ACCEPT = True
@@ -25,12 +26,24 @@ R6 = 'F'
 R7 = 'G'
 R8 = 'H'
 
+
+
+
+
+
+
 class TM:
     def __init__(self, input_string):
         self._tape = [list(f'▷{i}') for i in input_string.split('#') + list(R1) + list(BLANK)]
+
+        # self._tape = ['▷' + ''.join(i) for i in \
+        #     list(map(lambda x: list(x), [input_string, BLANK, R1, BLANK]))]
+
         self._head = [0] * K
         self._state = 'START'
+        # self._state = 'SETUP_TAPE'
         self._steps = 0
+
 
 
     def __str__(self):
@@ -92,15 +105,8 @@ class TM:
         x = [self.tape(i) for i in range(K)]
         y = list(action)
 
-        z = [i for i in range(K) if y[i] in "-*"]
-        z = [x.pop(i) and y.pop(i) for i in reversed(z)]
-
-        if "*" in z:
-            print(z)
-
-        for i, j in enumerate(z):
-            if j == '*':
-                z[i] = self.tape(i)
+        z = [i for i in range(K) if y[i] in "-"]
+        [x.pop(i) and y.pop(i) for i in reversed(z)]
 
         return x == y
 
@@ -108,9 +114,6 @@ class TM:
     def write(self, action):
         """Writes a symbol on each tape"""
         action = list(action)
-        for i, j in enumerate(action):
-            if j == '*':
-                action[i] = self.tape(i)
 
         for i in range(K):
             if action[i] != STAY:
@@ -143,11 +146,28 @@ class TM:
         return False
 
 
-    def REWIND(self):
+    def SETUP_TAPE(self):
+        if self.T("#---", ".---", ">>--", "COPY_INPUT"): return
+        if self.T("----", "----", ">---", "SETUP_TAPE"): return
+
+
+    def COPY_INPUT(self):
+        if self.T("0---", "-0--", "----", "COPY_INPUT"): return
+        if self.T("1---", "-1--", "----", "COPY_INPUT"): return
+        if self.T(".---", "----", "----", "REWIND_INPUT"): return
+
+
+    def REWIND_INPUT(self):
+        if self.T("-▷--", "----", "----", "REWIND_STATE"): return
+        if self.T("----", "----", "-<--", "REWIND_INPUT"): return
+
+
+    def REWIND_STATE(self):
         if self.tape(0) != START:
             self.move('<---')
         else:
             self._state = "START"
+
 
     def START(self):
         if self.T("▷▷▷▷", "----", ">>>>", "SCAN_STATE"): return
@@ -219,19 +239,20 @@ class TM:
         if self.T("1--G", "---H", ">---", "GET_STATE"): return
         if self.T("1--H", "----", "----", "REJECT"): return
 
-        if self.T("0--A", "--A-", "->->", "REWIND"): return
-        if self.T("0--B", "--B-", "->->", "REWIND"): return
-        if self.T("0--C", "--C-", "->->", "REWIND"): return
-        if self.T("0--D", "--D-", "->->", "REWIND"): return
-        if self.T("0--E", "--E-", "->->", "REWIND"): return
-        if self.T("0--F", "--F-", "->->", "REWIND"): return
-        if self.T("0--G", "--G-", "->->", "REWIND"): return
-        if self.T("0--H", "--H-", "->->", "REWIND"): return
+        if self.T("0--A", "--A-", "->->", "REWIND_STATE"): return
+        if self.T("0--B", "--B-", "->->", "REWIND_STATE"): return
+        if self.T("0--C", "--C-", "->->", "REWIND_STATE"): return
+        if self.T("0--D", "--D-", "->->", "REWIND_STATE"): return
+        if self.T("0--E", "--E-", "->->", "REWIND_STATE"): return
+        if self.T("0--F", "--F-", "->->", "REWIND_STATE"): return
+        if self.T("0--G", "--G-", "->->", "REWIND_STATE"): return
+        if self.T("0--H", "--H-", "->->", "REWIND_STATE"): return
 
     def NEXT_STATE(self):
         if self.T("1---", "---.", ">---", "NEXT_STATE"): return
         if self.T("0--.", "---0", ">---", "NEXT_STATE"): return
         if self.T("0--0", "----", ">-->", "SCAN_STATE"): return
+        if self.T("----", "----", "----", "REJECT"): return
 
     def HALT(self):
         if self.T("1---", "---.", ">---", "HALT"): return
@@ -245,7 +266,10 @@ class TM:
         counter = 0
 
         state = {
-            "REWIND": self.REWIND,
+            "SETUP_TAPE": self.SETUP_TAPE,
+            "REWIND_STATE": self.REWIND_STATE,
+            "REWIND_iNPUT": self.REWIND_INPUT,
+            "COPY_INPUT": self.COPY_INPUT,
             "START": self.START,
             "SCAN_STATE": self.SCAN_STATE,
             "SCAN_INPUT": self.SCAN_INPUT,
@@ -262,7 +286,7 @@ class TM:
             self._steps += 1
             os.system('clear')
             print(self)
-            time.sleep(0.01)
+            time.sleep(MEDIUM)
 
             if self.state == "ACCEPT":
                 print('\033[93mSteps\033[0m:', self._steps, '\n')
@@ -281,6 +305,6 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    XOR_TM = TM(f'{F_DFA}#{sys.argv[1]}')
+    XOR_TM = TM(f'{XOR_DFA}#{sys.argv[1]}')
     XOR_TM.run()
 
