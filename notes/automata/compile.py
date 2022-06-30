@@ -1,43 +1,33 @@
 #!/usr/bin/env python3
 
 import sys
-from enum import Enum, auto
+import time, os
 from encode import *
 
 
 K = 4
 SHOW_HEAD = True
 
-
-class State(Enum):
-    # __________________
-    ZERO = '0'
-    ONE = '1'
-    BLANK = '.'
-    # __________________
-    START = '▷'
-    ACCEPT = auto()
-    REJECT = auto()
-    # __________________
-    LEFT = '<'
-    RIGHT = '>'
-    STAY = '-'
-    # __________________
-    R1 = 'A'
-    R2 = 'B'
-    R3 = 'C'
-    R4 = 'D'
-    R5 = 'E'
-    R6 = 'F'
-    R7 = 'G'
-    R8 = 'H'
-
-    def __str__(self):
-        return str(self.value)
+START = '▷'
+ACCEPT = True
+REJECT = False
+# __________________
+LEFT = '<'
+RIGHT = '>'
+STAY = '-'
+# __________________
+R1 = 'A'
+R2 = 'B'
+R3 = 'C'
+R4 = 'D'
+R5 = 'E'
+R6 = 'F'
+R7 = 'G'
+R8 = 'H'
 
 class TM:
     def __init__(self, input_string):
-        self._tape = [list(f'▷{i}') for i in input_string.split('#') + list('A') + list(BLANK)]
+        self._tape = [list(f'▷{i}') for i in input_string.split('#') + list(R1) + list(BLANK)]
         self._head = [0] * K
         self._state = 'START'
         self._steps = 0
@@ -47,8 +37,6 @@ class TM:
         '''Outputs the current tape state'''
         res = ''
         print('\033[32m' + self._state + '\033[0m')
-
-
 
         if SHOW_HEAD:
             for i in range(K):
@@ -93,47 +81,57 @@ class TM:
         self._state = state
 
 
-    def tape(self, pos):
+    def tape(self, n):
         '''Returns the symbol on a particular tape'''
-        return self._tape[pos][self._head[pos]]
+        if n > K:
+            raise ValueError("TapeOutOfBounds")
+        return self._tape[n][self._head[n]]
 
 
     def symbol(self, action):
-        x = [str(self.tape(i)) for i in range(K)]
+        x = [self.tape(i) for i in range(K)]
         y = list(action)
 
-        z = [i for i in range(K) if y[i] == '-']
+        z = [i for i in range(K) if y[i] in "-*"]
+        z = [x.pop(i) and y.pop(i) for i in reversed(z)]
 
-        [x.pop(i) and y.pop(i) for i in reversed(z)]
+        if "*" in z:
+            print(z)
+
+        for i, j in enumerate(z):
+            if j == '*':
+                z[i] = self.tape(i)
 
         return x == y
 
 
     def write(self, action):
         """Writes a symbol on each tape"""
-        action = list(map(lambda f: State(f), list(action)))
+        action = list(action)
+        for i, j in enumerate(action):
+            if j == '*':
+                action[i] = self.tape(i)
 
         for i in range(K):
-            if action[i] != State.STAY:
+            if action[i] != STAY:
                 self._tape[i][self._head[i]] = action[i]
 
 
     def move(self, action):
         """Moves the head position on each tape"""
-        action = list(map(lambda f: State(f), list(action)))
+        action = list(action)
 
         for i, move in enumerate(action):
-            match move:
-                case State.LEFT:
-                    self._head[i] = max(0, self._head[i] - 1)
-                case State.RIGHT:
-                    if self._head[i] >= len(self._tape[i]) - 1:
-                        self._tape[i] += BLANK
-                    self._head[i] += 1
-                case State.STAY:
-                    self._head[i] = self._head[i]
-                case _:
-                    raise ValueError(f"Invalid Move: {move}")
+            if move == LEFT:
+                self._head[i] = max(0, self._head[i] - 1)
+            elif move == RIGHT:
+                if self._head[i] >= len(self._tape[i]) - 1:
+                    self._tape[i] += BLANK
+                self._head[i] += 1
+            elif move == STAY:
+                self._head[i] = self._head[i]
+            else:
+                raise ValueError(f"Invalid Move: {move}")
 
 
     def T(self, x, y, z, i):
@@ -146,7 +144,7 @@ class TM:
 
 
     def REWIND(self):
-        if str(self.tape(0)) != str(State.START):
+        if self.tape(0) != START:
             self.move('<---')
         else:
             self._state = "START"
@@ -175,6 +173,7 @@ class TM:
         if self.T("0---", "----", ">---", "CHECK_INPUT"): return
 
     def SCAN_FINAL(self):
+        if self.T("1--#", "----", "--->", "SCAN_FINAL"): return
         if self.T("1--.", "---A", ">---", "SCAN_FINAL"): return
         if self.T("1--A", "---B", ">---", "SCAN_FINAL"): return
         if self.T("1--B", "---C", ">---", "SCAN_FINAL"): return
@@ -183,10 +182,11 @@ class TM:
         if self.T("1--E", "---F", ">---", "SCAN_FINAL"): return
         if self.T("1--F", "---G", ">---", "SCAN_FINAL"): return
         if self.T("1--G", "---H", ">---", "SCAN_FINAL"): return
-        if self.T("0---", "----", "----", "CHECK_FINAL"): return
+        if self.T("0---", "----", ">-->", "SCAN_FINAL"): return
+        if self.T(".---", "----", "---<", "CHECK_FINAL"): return
 
     def CHECK_STATE(self):
-        if str(self.tape(2)) == str(self.tape(3)):
+        if self.tape(2) == self.tape(3):
             self.move("--->")
             self.state = "SCAN_INPUT"
         else:
@@ -194,7 +194,7 @@ class TM:
             self.state = "NEXT_STATE"
 
     def CHECK_INPUT(self):
-        if str(self.tape(1)) == str(self.tape(3)):
+        if self.tape(1) == self.tape(3):
             self.move("-->>")
             self.state = "GET_STATE"
         else:
@@ -202,10 +202,11 @@ class TM:
             self.state = "NEXT_STATE"
 
     def CHECK_FINAL(self):
-        if str(self.tape(2)) == str(self.tape(3)):
+        if self.tape(2) == self.tape(3):
             self.state = "ACCEPT"
-        else:
-            self.state = "REJECT"
+            return
+        if self.T("---#", "----", "----", "REJECT"): return
+        if self.T("----", "----", "---<", "CHECK_FINAL"): return
 
     def GET_STATE(self):
         if self.T("1--.", "---A", ">---", "GET_STATE"): return
@@ -236,59 +237,50 @@ class TM:
         if self.T("1---", "---.", ">---", "HALT"): return
         if self.T("0--.", "---A", ">---", "HALT"): return
         if self.T("0--A", "---B", ">---", "HALT"): return
-        if self.T("0--B", "---.", ">---", "SCAN_FINAL"): return
+        if self.T("0--B", "---#", ">---", "SCAN_FINAL"): return
 
 
     def run(self):
         """Executes the turing machine"""
         counter = 0
 
-        import time, os
+        state = {
+            "REWIND": self.REWIND,
+            "START": self.START,
+            "SCAN_STATE": self.SCAN_STATE,
+            "SCAN_INPUT": self.SCAN_INPUT,
+            "SCAN_FINAL": self.SCAN_FINAL,
+            "CHECK_STATE": self.CHECK_STATE,
+            "CHECK_INPUT": self.CHECK_INPUT,
+            "CHECK_FINAL": self.CHECK_FINAL,
+            "GET_STATE": self.GET_STATE,
+            "NEXT_STATE": self.NEXT_STATE,
+            "HALT": self.HALT,
+        }
 
         while True:
-            if str(self.tape(0)) == '.':
-                raise ValueError("Invalid Symbol")
-
             self._steps += 1
             os.system('clear')
             print(self)
             time.sleep(0.01)
 
-            if self._state == "REWIND":
-                self.REWIND()
-            elif self._state == "START":
-                self.START()
-            elif self._state == "SCAN_STATE":
-                self.SCAN_STATE()
-            elif self._state == "SCAN_INPUT":
-                self.SCAN_INPUT()
-            elif self._state == "SCAN_FINAL":
-                self.SCAN_FINAL()
-            elif self._state == "CHECK_STATE":
-                self.CHECK_STATE()
-            elif self._state == "CHECK_INPUT":
-                self.CHECK_INPUT()
-            elif self._state == "CHECK_FINAL":
-                self.CHECK_FINAL()
-            elif self._state == "GET_STATE":
-                self.GET_STATE()
-            elif self._state == "NEXT_STATE":
-                self.NEXT_STATE()
-            elif self._state == "HALT":
-                self.HALT()
-            elif self.state == "ACCEPT":
+            if self.state == "ACCEPT":
                 print('\033[93mSteps\033[0m:', self._steps, '\n')
                 return True
-            elif self.state == "REJECT":
+            if self.state == "REJECT":
                 print('\033[93mSteps\033[0m:', self._steps, '\n')
                 return False
-            else:
+
+            if self._state not in state:
                 raise ValueError("Invalid State")
+
+            state[self._state]()
 
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    TM(f'{F_DFA}#{sys.argv[1]}').run()
+    XOR_TM = TM(f'{F_DFA}#{sys.argv[1]}')
+    XOR_TM.run()
 
