@@ -4,37 +4,7 @@
 import sys
 import time, os
 from encode import *
-
-
-K = 4
-SHOW_HEAD = 0
-SLOW, MEDIUM, FAST = 0.5, 0.01, 0.001
-
-
-
-
-START = '▷'
-ACCEPT = True
-REJECT = False
-# __________________
-LEFT = '<'
-RIGHT = '>'
-STAY = '-'
-# __________________
-R1 = 'A'
-R2 = 'B'
-R3 = 'C'
-R4 = 'D'
-R5 = 'E'
-R6 = 'F'
-R7 = 'G'
-R8 = 'H'
-
-
-
-class HaltProcess(Exception):
-    pass
-
+from state import *
 
 
 class TM:
@@ -43,7 +13,24 @@ class TM:
         self._head = [0] * K
         self._state = 'SETUP_TAPE'
         self._steps = 0
-
+        self._delta = {
+            "SETUP_TAPE": self.SETUP_TAPE,
+            "REWIND_STATE": self.REWIND_STATE,
+            "REWIND_INPUT": self.REWIND_INPUT,
+            "COPY_INPUT": self.COPY_INPUT,
+            "START": self.START,
+            "SCAN_STATE": self.SCAN_STATE,
+            "SCAN_INPUT": self.SCAN_INPUT,
+            "SCAN_FINAL": self.SCAN_FINAL,
+            "CHECK_STATE": self.CHECK_STATE,
+            "CHECK_INPUT": self.CHECK_INPUT,
+            "CHECK_FINAL": self.CHECK_FINAL,
+            "GET_STATE": self.GET_STATE,
+            "NEXT_STATE": self.NEXT_STATE,
+            "GOTO_FINAL": self.GOTO_FINAL,
+            "ACCEPT": self.ACCEPT,
+            "REJECT": self.REJECT
+        }
 
     def __str__(self):
         '''Outputs the current tape state'''
@@ -93,11 +80,11 @@ class TM:
         self._state = state
 
 
-    def tape(self, n):
+    def tape(self, pos):
         '''Returns the symbol on a particular tape'''
-        if n > K:
-            raise ValueError("TapeOutOfBounds")
-        return self._tape[n][self._head[n]]
+        if pos > K:
+            raise IndexError(f"Invalid Cell: {pos}")
+        return self._tape[pos][self._head[pos]]
 
 
     def symbol(self, action):
@@ -265,42 +252,25 @@ class TM:
 
     def run(self):
         """Executes the turing machine"""
-        state = {
-            "SETUP_TAPE": self.SETUP_TAPE,
-            "REWIND_STATE": self.REWIND_STATE,
-            "REWIND_INPUT": self.REWIND_INPUT,
-            "COPY_INPUT": self.COPY_INPUT,
-            "START": self.START,
-            "SCAN_STATE": self.SCAN_STATE,
-            "SCAN_INPUT": self.SCAN_INPUT,
-            "SCAN_FINAL": self.SCAN_FINAL,
-            "CHECK_STATE": self.CHECK_STATE,
-            "CHECK_INPUT": self.CHECK_INPUT,
-            "CHECK_FINAL": self.CHECK_FINAL,
-            "GET_STATE": self.GET_STATE,
-            "NEXT_STATE": self.NEXT_STATE,
-            "GOTO_FINAL": self.GOTO_FINAL,
-            "ACCEPT": self.ACCEPT,
-            "REJECT": self.REJECT
-        }
-
         while True:
             try:
-                # os.system('clear')
-                # print(self)
-                # time.sleep(MEDIUM)
+                os.system('clear')
+                print(self)
+                time.sleep(MEDIUM)
 
-                if self._state not in state:
-                    raise ValueError
+                if self._state not in self._delta:
+                    raise ValueError(f"Invalid State: {self._state}")
 
-                state[self._state]()
+                self._delta[self._state]()
                 self._steps += 1
-            except ValueError:
-                print(f"Invalid State: {self._state}")
+            except ValueError as inst:
+                print(inst)
+                break
+            except IndexError as inst:
+                print(inst)
                 break
             except HaltProcess as inst:
-                print(self)
-                print(f"The input \"{''.join(self._tape[1]).split('.')[0][1:]}\" is {inst}ED")
+                # print(self)
                 print(f"\033[93mSteps\033[0m: {self._steps}\n")
                 break
 
@@ -309,6 +279,6 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    XOR_TM = TM(f'{TEST}#{sys.argv[1]}')
+    XOR_TM = TM(f'{F_DFA}#{sys.argv[1]}')
     XOR_TM.run()
 
