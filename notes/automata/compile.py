@@ -88,12 +88,9 @@ class TM:
 
     def symbol(self, action):
         x = [self[i] for i in range(TAPE_LEN)]
-        y = list(action)
-
-        z = [i for i in range(TAPE_LEN) if y[i] in "-"]
-        [x.pop(i) and y.pop(i) for i in reversed(z)]
-
-        return x == y
+        z = [i for i in range(TAPE_LEN) if action[i] in "-"]
+        [x.pop(i) and action.pop(i) for i in reversed(z)]
+        return x == action
 
 
     def __getitem__(self, pos):
@@ -117,7 +114,7 @@ class TM:
                 self._head[i] = max(0, self._head[i] - 1)
             elif move == RIGHT:
                 if self._head[i] >= len(self._tape[i]) - 1:
-                    self._tape[i] += BLANK
+                    self._tape[i].append(BLANK)
                 self._head[i] += 1
             elif move == STAY:
                 pass
@@ -126,8 +123,26 @@ class TM:
 
 
     def T(self, x, y, z, i):
+        x = list(x)
+        y = list(y)
+
+        for index, k in enumerate(x):
+            if k == "*":
+                x[index] = self[index]
+                for index1, _ in enumerate(y):
+                    if _ == "*":
+                        y[index1] = x[index]
+            if k == "!":
+                for r in range(index + 1, len(x)):
+                    if x[r] == "!":
+                        if self[index] == self[r]:
+                            for q in range(TAPE_LEN):
+                                if y[q] != STAY:
+                                    self[q] = y[q]
+                            self.move(list(z))
+                            self.state = i
+                            return True
         if self.symbol(x):
-            y = list(y)
             for q in range(TAPE_LEN):
                 if y[q] != STAY:
                     self[q] = y[q]
@@ -164,6 +179,7 @@ class TM:
         if self.T("▷---", "----", ">---", "SCAN_STATE"): return
 
     def SCAN_STATE(self):
+        if self.T("-.--", "----", ">---", "GOTO_FINAL"): return # note: empty string input
         if self.T("1--.", "---A", ">---", "SCAN_STATE"): return
         if self.T("1--A", "---B", ">---", "SCAN_STATE"): return
         if self.T("1--B", "---C", ">---", "SCAN_STATE"): return
@@ -195,30 +211,15 @@ class TM:
         if self.T(".---", "----", "---<", "CHECK_FINAL"): return
 
     def CHECK_STATE(self):
-        if self.T("--AA", "----", "--->", "SCAN_INPUT"): return
-        if self.T("--BB", "----", "--->", "SCAN_INPUT"): return
-        if self.T("--CC", "----", "--->", "SCAN_INPUT"): return
-        if self.T("--DD", "----", "--->", "SCAN_INPUT"): return
-        if self.T("--EE", "----", "--->", "SCAN_INPUT"): return
-        if self.T("--FF", "----", "--->", "SCAN_INPUT"): return
-        if self.T("--GG", "----", "--->", "SCAN_INPUT"): return
-        if self.T("--HH", "----", "--->", "SCAN_INPUT"): return
+        if self.T("--!!", "----", "--->", "SCAN_INPUT"): return
         if self.T("----", "----", "--->", "NEXT_STATE"): return
 
     def CHECK_INPUT(self):
-        if self.T("-1-1", "----", "-->>", "GET_STATE"): return
-        if self.T("-0-0", "----", "-->>", "GET_STATE"): return
+        if self.T("-!-!", "----", "-->>", "GET_STATE"): return
         if self.T("----", "----", "--->", "NEXT_STATE"): return
 
     def CHECK_FINAL(self):
-        if self.T("--AA", "----", "--->", "ACCEPT"): return
-        if self.T("--BB", "----", "--->", "ACCEPT"): return
-        if self.T("--CC", "----", "--->", "ACCEPT"): return
-        if self.T("--DD", "----", "--->", "ACCEPT"): return
-        if self.T("--EE", "----", "--->", "ACCEPT"): return
-        if self.T("--FF", "----", "--->", "ACCEPT"): return
-        if self.T("--GG", "----", "--->", "ACCEPT"): return
-        if self.T("--HH", "----", "--->", "ACCEPT"): return
+        if self.T("--!!", "----", "----", "ACCEPT"): return
         if self.T("---#", "----", "----", "REJECT"): return
         if self.T("----", "----", "---<", "CHECK_FINAL"): return
 
@@ -232,15 +233,7 @@ class TM:
         if self.T("1--F", "---G", ">---", "GET_STATE"): return
         if self.T("1--G", "---H", ">---", "GET_STATE"): return
         if self.T("1--H", "----", "----", "REJECT"): return
-
-        if self.T("0--A", "--A-", "->->", "REWIND_STATE"): return
-        if self.T("0--B", "--B-", "->->", "REWIND_STATE"): return
-        if self.T("0--C", "--C-", "->->", "REWIND_STATE"): return
-        if self.T("0--D", "--D-", "->->", "REWIND_STATE"): return
-        if self.T("0--E", "--E-", "->->", "REWIND_STATE"): return
-        if self.T("0--F", "--F-", "->->", "REWIND_STATE"): return
-        if self.T("0--G", "--G-", "->->", "REWIND_STATE"): return
-        if self.T("0--H", "--H-", "->->", "REWIND_STATE"): return
+        if self.T("0--*", "--*-", "->->", "REWIND_STATE"): return
 
     def NEXT_STATE(self):
         if self.T("1---", "---.", ">---", "NEXT_STATE"): return
@@ -279,13 +272,11 @@ class TM:
                 return inst
             except HaltProcess as inst:
                 return f"\033[93mSteps\033[0m: {self._steps}\n"
-            # finally:
-            #     return "Undefined Error Caught"
 
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    XOR_TM = TM(f'{MULTI3}#{sys.argv[1]}')
+    XOR_TM = TM(f'{F_DFA}#{sys.argv[1]}')
     print(XOR_TM.run())
