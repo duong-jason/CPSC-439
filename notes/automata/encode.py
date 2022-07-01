@@ -1,4 +1,5 @@
 from collections import namedtuple
+from state import *
 
 
 # Computational Model: DFA

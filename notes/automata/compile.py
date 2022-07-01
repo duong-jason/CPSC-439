@@ -4,15 +4,19 @@
 import sys
 import time, os
 from encode import *
-from state import *
+
+
 
 
 class TM:
     def __init__(self, input_string):
         self._tape = list(map(lambda x: list('▷' + x), [input_string, BLANK, R1, BLANK]))
-        self._head = [0] * K
+        self._head = [0] * TAPE_LEN
         self._state = 'SETUP_TAPE'
         self._steps = 0
+
+
+        # FIX
         self._delta = {
             "SETUP_TAPE": self.SETUP_TAPE,
             "REWIND_STATE": self.REWIND_STATE,
@@ -32,13 +36,15 @@ class TM:
             "REJECT": self.REJECT
         }
 
+
     def __str__(self):
         '''Outputs the current tape state'''
+        # FIX
         res = ''
         print('\033[32m' + self._state + '\033[0m')
 
         if SHOW_HEAD:
-            for i in range(K):
+            for i in range(TAPE_LEN):
                 for j, cell in enumerate(self._tape[i]):
                     if j == self._head[i]:
                         res += '\033[91m' + "       v" + '\033[0m'
@@ -56,7 +62,7 @@ class TM:
                         res += str(cell)
                 res += "\n"
         else:
-            for i in range(K):
+            for i in range(TAPE_LEN):
                 res += f"\033[96mMODEL  \033[0m" if i == 0 else \
                        f"\033[96mINPUT  \033[0m" if i == 1 else \
                        f"\033[96mSTATE  \033[0m" if i == 2 else \
@@ -80,36 +86,30 @@ class TM:
         self._state = state
 
 
-    def tape(self, pos):
-        '''Returns the symbol on a particular tape'''
-        if pos > K:
-            raise IndexError(f"Invalid Cell: {pos}")
-        return self._tape[pos][self._head[pos]]
-
-
     def symbol(self, action):
-        x = [self.tape(i) for i in range(K)]
+        x = [self[i] for i in range(TAPE_LEN)]
         y = list(action)
 
-        z = [i for i in range(K) if y[i] in "-"]
+        z = [i for i in range(TAPE_LEN) if y[i] in "-"]
         [x.pop(i) and y.pop(i) for i in reversed(z)]
 
         return x == y
 
 
-    def write(self, action):
-        """Writes a symbol on each tape"""
-        action = list(action)
+    def __getitem__(self, pos):
+        '''Returns the symbol on a particular tape'''
+        if pos > TAPE_LEN:
+            raise IndexError(f"Invalid Cell: {pos}")
+        return self._tape[pos][self._head[pos]]
 
-        for i in range(K):
-            if action[i] != STAY:
-                self._tape[i][self._head[i]] = action[i]
+
+    def __setitem__(self, pos, symbol):
+        """Writes a symbol on each tape"""
+        self._tape[pos][self._head[pos]] = symbol
 
 
     def move(self, action):
         """Moves the head position on each tape"""
-        action = list(action)
-
         for i, move in enumerate(action):
             if move == LEFT:
                 self._head[i] = max(0, self._head[i] - 1)
@@ -125,8 +125,11 @@ class TM:
 
     def T(self, x, y, z, i):
         if self.symbol(x):
-            self.write(y)
-            self.move(z)
+            y = list(y)
+            for q in range(TAPE_LEN):
+                if y[q] != STAY:
+                    self[q] = y[q]
+            self.move(list(z))
             self.state = i
             return True
         return False
@@ -190,7 +193,7 @@ class TM:
         if self.T(".---", "----", "---<", "CHECK_FINAL"): return
 
     def CHECK_STATE(self):
-        if self.tape(2) == self.tape(3):
+        if self[2] == self[3]:
             self.move("--->")
             self.state = "SCAN_INPUT"
         else:
@@ -198,7 +201,7 @@ class TM:
             self.state = "NEXT_STATE"
 
     def CHECK_INPUT(self):
-        if self.tape(1) == self.tape(3):
+        if self[1] == self[3]:
             self.move("-->>")
             self.state = "GET_STATE"
         else:
@@ -206,7 +209,7 @@ class TM:
             self.state = "NEXT_STATE"
 
     def CHECK_FINAL(self):
-        if self.tape(2) == self.tape(3):
+        if self[2] == self[3]:
             self.state = "ACCEPT"
             return
         if self.T("---#", "----", "----", "REJECT"): return
@@ -264,21 +267,18 @@ class TM:
                 self._delta[self._state]()
                 self._steps += 1
             except ValueError as inst:
-                print(inst)
-                break
+                return inst
             except IndexError as inst:
-                print(inst)
-                break
+                return inst
             except HaltProcess as inst:
-                # print(self)
-                print(f"\033[93mSteps\033[0m: {self._steps}\n")
-                break
+                return f"\033[93mSteps\033[0m: {self._steps}\n"
+            # finally:
+            #     return "Undefined Error Caught"
 
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    XOR_TM = TM(f'{F_DFA}#{sys.argv[1]}')
-    XOR_TM.run()
-
+    XOR_TM = TM(f'{XOR_DFA}#{sys.argv[1]}')
+    print(XOR_TM.run())
