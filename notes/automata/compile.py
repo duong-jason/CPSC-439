@@ -108,6 +108,8 @@ class TM:
         self._tape[pos][self._head[pos]] = symbol
 
 
+
+
     def move(self, action):
         """Moves the head position on each tape"""
         for i, move in enumerate(action):
@@ -118,7 +120,7 @@ class TM:
                     self._tape[i] += BLANK
                 self._head[i] += 1
             elif move == STAY:
-                self._head[i] = self._head[i]
+                pass
             else:
                 raise ValueError(f"Invalid Move: {move}")
 
@@ -193,25 +195,30 @@ class TM:
         if self.T(".---", "----", "---<", "CHECK_FINAL"): return
 
     def CHECK_STATE(self):
-        if self[2] == self[3]:
-            self.move("--->")
-            self.state = "SCAN_INPUT"
-        else:
-            self.move("--->")
-            self.state = "NEXT_STATE"
+        if self.T("--AA", "----", "--->", "SCAN_INPUT"): return
+        if self.T("--BB", "----", "--->", "SCAN_INPUT"): return
+        if self.T("--CC", "----", "--->", "SCAN_INPUT"): return
+        if self.T("--DD", "----", "--->", "SCAN_INPUT"): return
+        if self.T("--EE", "----", "--->", "SCAN_INPUT"): return
+        if self.T("--FF", "----", "--->", "SCAN_INPUT"): return
+        if self.T("--GG", "----", "--->", "SCAN_INPUT"): return
+        if self.T("--HH", "----", "--->", "SCAN_INPUT"): return
+        if self.T("----", "----", "--->", "NEXT_STATE"): return
 
     def CHECK_INPUT(self):
-        if self[1] == self[3]:
-            self.move("-->>")
-            self.state = "GET_STATE"
-        else:
-            self.move("--->")
-            self.state = "NEXT_STATE"
+        if self.T("-1-1", "----", "-->>", "GET_STATE"): return
+        if self.T("-0-0", "----", "-->>", "GET_STATE"): return
+        if self.T("----", "----", "--->", "NEXT_STATE"): return
 
     def CHECK_FINAL(self):
-        if self[2] == self[3]:
-            self.state = "ACCEPT"
-            return
+        if self.T("--AA", "----", "--->", "ACCEPT"): return
+        if self.T("--BB", "----", "--->", "ACCEPT"): return
+        if self.T("--CC", "----", "--->", "ACCEPT"): return
+        if self.T("--DD", "----", "--->", "ACCEPT"): return
+        if self.T("--EE", "----", "--->", "ACCEPT"): return
+        if self.T("--FF", "----", "--->", "ACCEPT"): return
+        if self.T("--GG", "----", "--->", "ACCEPT"): return
+        if self.T("--HH", "----", "--->", "ACCEPT"): return
         if self.T("---#", "----", "----", "REJECT"): return
         if self.T("----", "----", "---<", "CHECK_FINAL"): return
 
@@ -280,5 +287,5 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    XOR_TM = TM(f'{XOR_DFA}#{sys.argv[1]}')
+    XOR_TM = TM(f'{MULTI3}#{sys.argv[1]}')
     print(XOR_TM.run())
