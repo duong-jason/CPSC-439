@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 
+
 import sys
 import time, os
 from encode import *
 
 
 K = 4
-SHOW_HEAD = True
+SHOW_HEAD = 0
 SLOW, MEDIUM, FAST = 0.5, 0.01, 0.001
+
+
+
 
 START = '▷'
 ACCEPT = True
@@ -28,22 +32,17 @@ R8 = 'H'
 
 
 
-
+class HaltProcess(Exception):
+    pass
 
 
 
 class TM:
     def __init__(self, input_string):
-        self._tape = [list(f'▷{i}') for i in input_string.split('#') + list(R1) + list(BLANK)]
-
-        # self._tape = ['▷' + ''.join(i) for i in \
-        #     list(map(lambda x: list(x), [input_string, BLANK, R1, BLANK]))]
-
+        self._tape = list(map(lambda x: list('▷' + x), [input_string, BLANK, R1, BLANK]))
         self._head = [0] * K
-        self._state = 'START'
-        # self._state = 'SETUP_TAPE'
+        self._state = 'SETUP_TAPE'
         self._steps = 0
-
 
 
     def __str__(self):
@@ -152,8 +151,8 @@ class TM:
 
 
     def COPY_INPUT(self):
-        if self.T("0---", "-0--", "----", "COPY_INPUT"): return
-        if self.T("1---", "-1--", "----", "COPY_INPUT"): return
+        if self.T("0---", ".0--", ">>--", "COPY_INPUT"): return
+        if self.T("1---", ".1--", ">>--", "COPY_INPUT"): return
         if self.T(".---", "----", "----", "REWIND_INPUT"): return
 
 
@@ -169,7 +168,7 @@ class TM:
 
     def START(self):
         if self.T("▷▷▷▷", "----", ">>>>", "SCAN_STATE"): return
-        if self.T("▷.--", "----", ">---", "HALT"): return
+        if self.T("▷.--", "----", ">---", "GOTO_FINAL"): return
         if self.T("▷---", "----", ">---", "SCAN_STATE"): return
 
     def SCAN_STATE(self):
@@ -233,8 +232,6 @@ class TM:
         if self.T("1--C", "---D", ">---", "GET_STATE"): return
         if self.T("1--D", "---E", ">---", "GET_STATE"): return
         if self.T("1--E", "---F", ">---", "GET_STATE"): return
-        # something wrong here :w
-
         if self.T("1--F", "---G", ">---", "GET_STATE"): return
         if self.T("1--G", "---H", ">---", "GET_STATE"): return
         if self.T("1--H", "----", "----", "REJECT"): return
@@ -254,19 +251,24 @@ class TM:
         if self.T("0--0", "----", ">-->", "SCAN_STATE"): return
         if self.T("----", "----", "----", "REJECT"): return
 
-    def HALT(self):
-        if self.T("1---", "---.", ">---", "HALT"): return
-        if self.T("0--.", "---A", ">---", "HALT"): return
-        if self.T("0--A", "---B", ">---", "HALT"): return
+    def GOTO_FINAL(self):
+        if self.T("1---", "---.", ">---", "GOTO_FINAL"): return
+        if self.T("0--.", "---A", ">---", "GOTO_FINAL"): return
+        if self.T("0--A", "---B", ">---", "GOTO_FINAL"): return
         if self.T("0--B", "---#", ">---", "SCAN_FINAL"): return
 
+    def ACCEPT(self):
+        raise HaltProcess("ACCEPT")
+
+    def REJECT(self):
+        raise HaltProcess("REJECT")
 
     def run(self):
         """Executes the turing machine"""
         state = {
             "SETUP_TAPE": self.SETUP_TAPE,
             "REWIND_STATE": self.REWIND_STATE,
-            "REWIND_iNPUT": self.REWIND_INPUT,
+            "REWIND_INPUT": self.REWIND_INPUT,
             "COPY_INPUT": self.COPY_INPUT,
             "START": self.START,
             "SCAN_STATE": self.SCAN_STATE,
@@ -277,26 +279,30 @@ class TM:
             "CHECK_FINAL": self.CHECK_FINAL,
             "GET_STATE": self.GET_STATE,
             "NEXT_STATE": self.NEXT_STATE,
-            "HALT": self.HALT,
+            "GOTO_FINAL": self.GOTO_FINAL,
+            "ACCEPT": self.ACCEPT,
+            "REJECT": self.REJECT
         }
 
         while True:
-            self._steps += 1
-            os.system('clear')
-            print(self)
-            time.sleep(MEDIUM)
+            try:
+                # os.system('clear')
+                # print(self)
+                # time.sleep(MEDIUM)
 
-            if self.state == "ACCEPT":
-                print('\033[93mSteps\033[0m:', self._steps, '\n')
-                return True
-            if self.state == "REJECT":
-                print('\033[93mSteps\033[0m:', self._steps, '\n')
-                return False
+                if self._state not in state:
+                    raise ValueError
 
-            if self._state not in state:
-                raise ValueError("Invalid State")
-
-            state[self._state]()
+                state[self._state]()
+                self._steps += 1
+            except ValueError:
+                print(f"Invalid State: {self._state}")
+                break
+            except HaltProcess as inst:
+                print(self)
+                print(f"The input \"{''.join(self._tape[1]).split('.')[0][1:]}\" is {inst}ED")
+                print(f"\033[93mSteps\033[0m: {self._steps}\n")
+                break
 
 
 if __name__ == '__main__':
