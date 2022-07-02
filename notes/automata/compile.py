@@ -6,13 +6,12 @@ import time, os
 from encode import *
 
 
-
-
 class TM:
     def __init__(self, input_string):
         self._tape = list(map(lambda x: list('▷' + x), [input_string, BLANK, R1, BLANK]))
         self._head = [0] * TAPE_LEN
         self._state = 'SETUP_TAPE'
+        self._move = STAY
         self._steps = 0
 
 
@@ -85,6 +84,15 @@ class TM:
     def state(self, state):
         self._state = state
 
+    @property
+    def move(self):
+        return self._move
+
+
+    @move.setter
+    def move(self, move):
+        self._move = move 
+
 
     def symbol(self, action):
         x = [self[i] for i in range(TAPE_LEN)]
@@ -96,7 +104,7 @@ class TM:
     def __getitem__(self, pos):
         '''Returns the symbol on a particular tape'''
         if pos > TAPE_LEN:
-            raise IndexError(f"Invalid Cell: {pos}")
+            raise IndexError(pos)
         return self._tape[pos][self._head[pos]]
 
 
@@ -105,11 +113,9 @@ class TM:
         self._tape[pos][self._head[pos]] = symbol
 
 
-
-
-    def move(self, action):
+    def move(self):
         """Moves the head position on each tape"""
-        for i, move in enumerate(action):
+        for i, move in enumerate(self._move):
             if move == LEFT:
                 self._head[i] = max(0, self._head[i] - 1)
             elif move == RIGHT:
@@ -119,7 +125,7 @@ class TM:
             elif move == STAY:
                 pass
             else:
-                raise ValueError(f"Invalid Move: {move}")
+                raise ValueError
 
 
     def T(self, x, y, z, i):
@@ -132,6 +138,15 @@ class TM:
                 for index1, _ in enumerate(y):
                     if _ == "*":
                         y[index1] = x[index]
+                    elif _ == "+":
+                        match x[index]:
+                            case '.': y[index1] = "A"
+                            case 'A': y[index1] = "B"
+                            case 'B': y[index1] = "C"
+                            case 'C': y[index1] = "D"
+                            case 'D': y[index1] = "E"
+                            case 'E': y[index1] = "G"
+                            case 'G': y[index1] = "H"
             if k == "!":
                 for r in range(index + 1, len(x)):
                     if x[r] == "!":
@@ -139,14 +154,16 @@ class TM:
                             for q in range(TAPE_LEN):
                                 if y[q] != STAY:
                                     self[q] = y[q]
-                            self.move(list(z))
+                            self._move = list(z)
+                            self.move()
                             self.state = i
                             return True
         if self.symbol(x):
             for q in range(TAPE_LEN):
                 if y[q] != STAY:
                     self[q] = y[q]
-            self.move(list(z))
+            self._move = list(z)
+            self.move()
             self.state = i
             return True
         return False
@@ -180,14 +197,7 @@ class TM:
 
     def SCAN_STATE(self):
         if self.T("-.--", "----", ">---", "GOTO_FINAL"): return # note: empty string input
-        if self.T("1--.", "---A", ">---", "SCAN_STATE"): return
-        if self.T("1--A", "---B", ">---", "SCAN_STATE"): return
-        if self.T("1--B", "---C", ">---", "SCAN_STATE"): return
-        if self.T("1--C", "---D", ">---", "SCAN_STATE"): return
-        if self.T("1--D", "---E", ">---", "SCAN_STATE"): return
-        if self.T("1--E", "---F", ">---", "SCAN_STATE"): return
-        if self.T("1--F", "---G", ">---", "SCAN_STATE"): return
-        if self.T("1--G", "---H", ">---", "SCAN_STATE"): return
+        if self.T("1--*", "---+", ">---", "SCAN_STATE"): return
         if self.T("1--H", "----", "----", "REJECT"): return
         if self.T("0---", "----", ">---", "CHECK_STATE"): return
 
@@ -199,15 +209,9 @@ class TM:
 
     def SCAN_FINAL(self):
         if self.T("1--#", "----", "--->", "SCAN_FINAL"): return
-        if self.T("1--.", "---A", ">---", "SCAN_FINAL"): return
-        if self.T("1--A", "---B", ">---", "SCAN_FINAL"): return
-        if self.T("1--B", "---C", ">---", "SCAN_FINAL"): return
-        if self.T("1--C", "---D", ">---", "SCAN_FINAL"): return
-        if self.T("1--D", "---E", ">---", "SCAN_FINAL"): return
-        if self.T("1--E", "---F", ">---", "SCAN_FINAL"): return
-        if self.T("1--F", "---G", ">---", "SCAN_FINAL"): return
-        if self.T("1--G", "---H", ">---", "SCAN_FINAL"): return
+        if self.T("1--*", "---+", ">---", "SCAN_FINAL"): return
         if self.T("0---", "----", ">-->", "SCAN_FINAL"): return
+        if self.T(".--#", "----", "----", "REJECT"): return
         if self.T(".---", "----", "---<", "CHECK_FINAL"): return
 
     def CHECK_STATE(self):
@@ -224,14 +228,7 @@ class TM:
         if self.T("----", "----", "---<", "CHECK_FINAL"): return
 
     def GET_STATE(self):
-        if self.T("1--.", "---A", ">---", "GET_STATE"): return
-        if self.T("1--A", "---B", ">---", "GET_STATE"): return
-        if self.T("1--B", "---C", ">---", "GET_STATE"): return
-        if self.T("1--C", "---D", ">---", "GET_STATE"): return
-        if self.T("1--D", "---E", ">---", "GET_STATE"): return
-        if self.T("1--E", "---F", ">---", "GET_STATE"): return
-        if self.T("1--F", "---G", ">---", "GET_STATE"): return
-        if self.T("1--G", "---H", ">---", "GET_STATE"): return
+        if self.T("1--*", "---+", ">---", "GET_STATE"): return
         if self.T("1--H", "----", "----", "REJECT"): return
         if self.T("0--*", "--*-", "->->", "REWIND_STATE"): return
 
@@ -261,22 +258,21 @@ class TM:
                 print(self)
                 time.sleep(MEDIUM)
 
-                if self._state not in self._delta:
-                    raise ValueError(f"Invalid State: {self._state}")
-
                 self._delta[self._state]()
                 self._steps += 1
-            except ValueError as inst:
-                return inst
-            except IndexError as inst:
-                return inst
-            except HaltProcess as inst:
+            except KeyError:
+                return f"Invalid State: {self._state}"
+            except ValueError:
+                return f"Invalid Move: {self._move}"
+            except IndexError as pos:
+                return f"Invalid Cell: {pos}"
+            except HaltProcess:
                 return f"\033[93mSteps\033[0m: {self._steps}\n"
 
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        exit(f"ERROR: {sys.argv[0]} <input_string>")
+     exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    XOR_TM = TM(f'{F_DFA}#{sys.argv[1]}')
+    XOR_TM = TM(f'{XOR_DFA}#{sys.argv[1]}')
     print(XOR_TM.run())

@@ -1,11 +1,17 @@
 TAPE_LEN = 4
-SHOW_HEAD = 0
+SHOW_HEAD = 1
 SLOW, MEDIUM, FAST = 0.5, 0.01, 0.001
 
-# ___STATES___
+# ___SYMBOLS___
 ZERO = '0'
 ONE = '1'
-BLANK = '.'
+BLANK = '.'  # symbol to keep track of the end of tape
+HEAD = "*"   # symbol under tape's head position
+SEP = "#"    # symbol to keep track between symbols on tapes
+ADD = '+'    # symbol obtained by adding the <HEAD> symbol (must be on the same tape)
+ALL = '!'    # symbol that accepts all symbols under a tape's head position where the '!'
+             # was specified is equal
+# ___STATES___
 START = '▷'
 ACCEPT = True
 REJECT = False
