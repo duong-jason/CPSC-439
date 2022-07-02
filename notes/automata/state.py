@@ -8,8 +8,8 @@ ONE = '1'
 BLANK = '.'  # symbol to keep track of the end of tape
 COPY = "*"   # symbol under tape's head position
 SEP = "#"    # symbol to keep track between symbols on tapes
-INCR = '+'    # symbol obtained by adding the <HEAD> symbol (must be on the same tape)
-EQ = '!'    # symbol that accepts all symbols under a tape's head position where the '!'
+INCR = '+'   # symbol obtained by adding the <HEAD> symbol (must be on the same tape)
+EQ = '!'     # symbol that accepts all symbols under a tape's head position where the '!'
              # was specified is equal
 # ___STATES___
 START = '▷'
@@ -31,4 +31,13 @@ R8 = 'H'
 
 
 class HaltProcess(Exception):
+    pass
+
+class StateError(HaltProcess):
+    pass
+
+class MoveError(HaltProcess):
+    pass
+
+class CellFault(HaltProcess):
     pass

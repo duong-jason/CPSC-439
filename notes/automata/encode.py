@@ -28,7 +28,7 @@ DFA.__repr__ = encode
 q0, q1, q2, q3, q4, q5, q6, q7 = list(range(8))
 
 
-XOR_DFA = DFA(
+ODD_ONE = DFA(
     dict([
         ((q0, 0), q0), ((q0, 1), q1),
         ((q1, 0), q1), ((q1, 1), q0),
@@ -37,7 +37,7 @@ XOR_DFA = DFA(
 )
 
 
-F_DFA = DFA(
+ZOZ = DFA(
     dict([
         ((q0, 0), q2), ((q0, 1), q3),
         ((q1, 0), q0), ((q1, 1), q3),
@@ -48,7 +48,7 @@ F_DFA = DFA(
 )
 
 
-ZO_DFA = DFA(
+ZO = DFA(
     dict([
         ((q0, 0), q1), ((q0, 1), q2),
         ((q1, 0), q1), ((q1, 1), q3),
@@ -58,7 +58,7 @@ ZO_DFA = DFA(
     [q3]
 )
 
-TEST = DFA(
+COUNTER = DFA(
     dict([
         ((q0, 0), q1), ((q0, 1), q7),
         ((q1, 0), q2), ((q1, 1), q0),
