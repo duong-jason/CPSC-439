@@ -6,10 +6,10 @@ SLOW, MEDIUM, FAST = 0.5, 0.01, 0.001
 ZERO = '0'
 ONE = '1'
 BLANK = '.'  # symbol to keep track of the end of tape
-HEAD = "*"   # symbol under tape's head position
+COPY = "*"   # symbol under tape's head position
 SEP = "#"    # symbol to keep track between symbols on tapes
-ADD = '+'    # symbol obtained by adding the <HEAD> symbol (must be on the same tape)
-ALL = '!'    # symbol that accepts all symbols under a tape's head position where the '!'
+INCR = '+'    # symbol obtained by adding the <HEAD> symbol (must be on the same tape)
+EQ = '!'    # symbol that accepts all symbols under a tape's head position where the '!'
              # was specified is equal
 # ___STATES___
 START = '▷'

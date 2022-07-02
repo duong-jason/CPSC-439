@@ -74,6 +74,17 @@ class TM:
                 res += '\n'
         return res
 
+    def __getitem__(self, pos):
+        '''Returns the symbol on a particular tape'''
+        if pos > TAPE_LEN:
+            raise IndexError(pos)
+        return self._tape[pos][self._head[pos]]
+
+
+    def __setitem__(self, pos, symbol):
+        """Writes a symbol on each tape"""
+        self._tape[pos][self._head[pos]] = symbol
+
 
     @property
     def state(self):
@@ -93,24 +104,10 @@ class TM:
     def move(self, move):
         self._move = move 
 
-
     def symbol(self, action):
-        x = [self[i] for i in range(TAPE_LEN)]
-        z = [i for i in range(TAPE_LEN) if action[i] in "-"]
-        [x.pop(i) and action.pop(i) for i in reversed(z)]
-        return x == action
-
-
-    def __getitem__(self, pos):
-        '''Returns the symbol on a particular tape'''
-        if pos > TAPE_LEN:
-            raise IndexError(pos)
-        return self._tape[pos][self._head[pos]]
-
-
-    def __setitem__(self, pos, symbol):
-        """Writes a symbol on each tape"""
-        self._tape[pos][self._head[pos]] = symbol
+        symbol = [self[i] for i in range(TAPE_LEN)]
+        [symbol.pop(i) and action.pop(i) for i in reversed(range(TAPE_LEN)) if action[i] == STAY]
+        return symbol == action
 
 
     def move(self):
@@ -129,24 +126,24 @@ class TM:
 
 
     def T(self, x, y, z, i):
-        x = list(x)
-        y = list(y)
+        x, y, z = map(lambda f: list(f), [x, y, z])
+
+        if COPY in x:
+            xpos = x.index(COPY)
+            x[xpos] = self[xpos]
+            if COPY in y:
+                ypos = y.index(COPY)
+                y[ypos] = self[xpos]
+            elif INCR in y:
+                rule = '.ABCDEFGH'
+                ypos = y.index(INCR)
+                y[ypos] = rule[rule.find(self[ypos]) + 1]
+
+        if EQ in x:
+            all(self[i] for i in [j for j in range(TAPE_LEN) if x[j] == EQ])
+
 
         for index, k in enumerate(x):
-            if k == "*":
-                x[index] = self[index]
-                for index1, _ in enumerate(y):
-                    if _ == "*":
-                        y[index1] = x[index]
-                    elif _ == "+":
-                        match x[index]:
-                            case '.': y[index1] = "A"
-                            case 'A': y[index1] = "B"
-                            case 'B': y[index1] = "C"
-                            case 'C': y[index1] = "D"
-                            case 'D': y[index1] = "E"
-                            case 'E': y[index1] = "G"
-                            case 'G': y[index1] = "H"
             if k == "!":
                 for r in range(index + 1, len(x)):
                     if x[r] == "!":
@@ -154,15 +151,16 @@ class TM:
                             for q in range(TAPE_LEN):
                                 if y[q] != STAY:
                                     self[q] = y[q]
-                            self._move = list(z)
+                            self._move = z
                             self.move()
                             self.state = i
                             return True
+
         if self.symbol(x):
             for q in range(TAPE_LEN):
                 if y[q] != STAY:
                     self[q] = y[q]
-            self._move = list(z)
+            self._move = z
             self.move()
             self.state = i
             return True
@@ -274,5 +272,5 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
      exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    XOR_TM = TM(f'{XOR_DFA}#{sys.argv[1]}')
+    XOR_TM = TM(f'{XOR_DFA}{SEP}{sys.argv[1]}')
     print(XOR_TM.run())
