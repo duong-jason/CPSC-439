@@ -134,6 +134,15 @@ class TM:
                 for index1, _ in enumerate(y):
                     if _ == "*":
                         y[index1] = x[index]
+                    elif _ == "+":
+                        match x[index]:
+                            case '.': y[index1] = "A"
+                            case 'A': y[index1] = "B"
+                            case 'B': y[index1] = "C"
+                            case 'C': y[index1] = "D"
+                            case 'D': y[index1] = "E"
+                            case 'E': y[index1] = "G"
+                            case 'G': y[index1] = "H"
             if k == "!":
                 for r in range(index + 1, len(x)):
                     if x[r] == "!":
@@ -141,10 +150,10 @@ class TM:
                             for q in range(TAPE_LEN):
                                 if y[q] != STAY:
                                     self[q] = y[q]
-                            self.move(list(z))
+                            self._move = z
+                            self.move()
                             self.state = i
                             return True
-
         """
         if COPY in x:
             xpos = x.index(COPY)
