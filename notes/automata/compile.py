@@ -76,7 +76,7 @@ class TM:
     def __getitem__(self, pos):
         '''Returns the symbol on a particular tape'''
         if pos > TAPE_LEN:
-            raise IndexError(pos)
+            raise CellFault(pos)
         return self._tape[pos][self._head[pos]]
 
 
@@ -197,7 +197,7 @@ class TM:
         if self.T("1--#", "----", "--->", "SCAN_FINAL"): return # note: marker added to backtrack
         if self.T("0---", "----", ">-->", "SCAN_FINAL"): return
         if self.T("1--*", "---+", ">---", "SCAN_FINAL"): return
-        if self.T(".--#", "----", "----", "REJECT"): return
+        if self.T(".--#", "----", "----", "ACCEPT"): return     # note: no final states
         if self.T(".---", "----", "---<", "CHECK_FINAL"): return
 
     def CHECK_STATE(self):
@@ -239,9 +239,9 @@ class TM:
         """Executes the turing machine"""
         while True:
             try:
-                # os.system('clear')
-                # print(self)
-                # time.sleep(MEDIUM)
+                os.system('clear')
+                print(self)
+                time.sleep(MEDIUM)
 
                 if self._state not in self._delta:
                     raise StateError
@@ -255,7 +255,6 @@ class TM:
             except CellFault as pos:
                 return f"Invalid Cell: {pos}"
             except HaltProcess:
-                print(self)
                 return f"\033[93mSteps\033[0m: {self._steps}\n"
 
 
