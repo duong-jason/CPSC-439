@@ -1,0 +1,21 @@
+        if COPY in x:
+            xpos = x.index(COPY)
+            x[xpos] = self[xpos]
+            print(xpos, xpos)
+            if COPY in y:
+                ypos = y.index(COPY)
+                y[ypos] = self[xpos]
+            elif INCR in y:
+                rule = '.ABCDEFGH'
+                ypos = y.index(INCR)
+                y[ypos] = rule[min(rule.find(self[ypos]) + 1, len(rule))]
+
+        if EQ in x:
+            if all(self[r] for r in [k for k in range(TAPE_LEN) if x[k] == EQ]):
+                for q in range(TAPE_LEN):
+                    if y[q] != STAY:
+                        self[q] = y[q]
+                    self._move = z
+                    self.move()
+                    self.state = i
+                    return True

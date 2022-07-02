@@ -131,16 +131,14 @@ class TM:
         if COPY in x:
             xpos = x.index(COPY)
             x[xpos] = self[xpos]
+            print(xpos, xpos)
             if COPY in y:
                 ypos = y.index(COPY)
                 y[ypos] = self[xpos]
             elif INCR in y:
                 rule = '.ABCDEFGH'
                 ypos = y.index(INCR)
-                y[ypos] = rule[rule.find(self[ypos]) + 1]
-
-        if EQ in x:
-            all(self[i] for i in [j for j in range(TAPE_LEN) if x[j] == EQ])
+                y[ypos] = rule[min(rule.find(self[ypos]) + 1, len(rule))]
 
 
         for index, k in enumerate(x):
@@ -155,6 +153,18 @@ class TM:
                             self.move()
                             self.state = i
                             return True
+
+        '''
+        if EQ in x:
+            if all(self[r] for r in [k for k in range(TAPE_LEN) if x[k] == EQ]):
+                for q in range(TAPE_LEN):
+                    if y[q] != STAY:
+                        self[q] = y[q]
+                    self._move = z
+                    self.move()
+                    self.state = i
+                    return True
+        '''
 
         if self.symbol(x):
             for q in range(TAPE_LEN):
@@ -238,9 +248,8 @@ class TM:
 
     def GOTO_FINAL(self):
         if self.T("1---", "---.", ">---", "GOTO_FINAL"): return
-        if self.T("0--.", "---A", ">---", "GOTO_FINAL"): return
-        if self.T("0--A", "---B", ">---", "GOTO_FINAL"): return
         if self.T("0--B", "---#", ">---", "SCAN_FINAL"): return
+        if self.T("0--*", "---+", ">---", "GOTO_FINAL"): return
 
     def ACCEPT(self):
         raise HaltProcess("ACCEPT")
@@ -272,5 +281,5 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
      exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    XOR_TM = TM(f'{XOR_DFA}{SEP}{sys.argv[1]}')
+    XOR_TM = TM(f'{TEST}{SEP}{sys.argv[1]}')
     print(XOR_TM.run())
