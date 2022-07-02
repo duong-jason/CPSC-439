@@ -128,13 +128,19 @@ class TM:
     def T(self, x, y, z, i):
         x, y, z = map(lambda f: list(f), [x, y, z])
 
+        if self[2] not in list(f'{START}.ABCDEFGH'):
+                exit()
+
         for index, k in enumerate(x):
             if k == "*":
+                print(x[index])
                 x[index] = self[index]
-                for index1, _ in enumerate(y):
-                    if _ == "*":
+                print(x[index])
+                for index1, p in enumerate(y):
+                    if p == "*":
                         y[index1] = x[index]
-                    elif _ == "+":
+                    elif p == "+":
+                        print(x[index])
                         match x[index]:
                             case '.': y[index1] = "A"
                             case 'A': y[index1] = "B"
@@ -249,7 +255,7 @@ class TM:
     def GET_STATE(self):
         if self.T("1--*", "---+", ">---", "GET_STATE"): return
         if self.T("1--H", "----", "----", "REJECT"): return
-        if self.T("0--*", "--*-", "->->", "REWIND_STATE"): return
+        if self.T("0--*", "--*-", "->->", "REWIND_STATE"): exit()
 
     def NEXT_STATE(self):
         if self.T("1---", "---.", ">---", "NEXT_STATE"): return
@@ -275,6 +281,7 @@ class TM:
                 os.system('clear')
                 print(self)
                 time.sleep(MEDIUM)
+
 
                 self._delta[self._state]()
                 self._steps += 1
