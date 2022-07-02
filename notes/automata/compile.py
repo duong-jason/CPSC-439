@@ -128,6 +128,24 @@ class TM:
     def T(self, x, y, z, i):
         x, y, z = map(lambda f: list(f), [x, y, z])
 
+        for index, k in enumerate(x):
+            if k == "*":
+                x[index] = self[index]
+                for index1, _ in enumerate(y):
+                    if _ == "*":
+                        y[index1] = x[index]
+            if k == "!":
+                for r in range(index + 1, len(x)):
+                    if x[r] == "!":
+                        if self[index] == self[r]:
+                            for q in range(TAPE_LEN):
+                                if y[q] != STAY:
+                                    self[q] = y[q]
+                            self.move(list(z))
+                            self.state = i
+                            return True
+
+        """
         if COPY in x:
             xpos = x.index(COPY)
             x[xpos] = self[xpos]
@@ -139,22 +157,6 @@ class TM:
                 rule = '.ABCDEFGH'
                 ypos = y.index(INCR)
                 y[ypos] = rule[min(rule.find(self[ypos]) + 1, len(rule))]
-
-
-        for index, k in enumerate(x):
-            if k == "!":
-                for r in range(index + 1, len(x)):
-                    if x[r] == "!":
-                        if self[index] == self[r]:
-                            for q in range(TAPE_LEN):
-                                if y[q] != STAY:
-                                    self[q] = y[q]
-                            self._move = z
-                            self.move()
-                            self.state = i
-                            return True
-
-        '''
         if EQ in x:
             if all(self[r] for r in [k for k in range(TAPE_LEN) if x[k] == EQ]):
                 for q in range(TAPE_LEN):
@@ -164,7 +166,7 @@ class TM:
                     self.move()
                     self.state = i
                     return True
-        '''
+        """
 
         if self.symbol(x):
             for q in range(TAPE_LEN):
