@@ -8,7 +8,7 @@ from encode import *
 
 class TM:
     def __init__(self, input_string):
-        self._tape = list(map(lambda x: list('▷' + x), [input_string, BLANK, R1, BLANK]))
+        self._tape = list(map(lambda x: list('▷' + x), [input_string, BLANK, REG[0], BLANK]))
         self._head = [0] * TAPE_LEN
         self._state = 'SETUP_TAPE'
         self._move = STAY
@@ -136,7 +136,7 @@ class TM:
                 ypos = y.index(COPY)
                 y[ypos] = self[xpos]
             if INCR in y:
-                rule = '.ABCDEFGH'
+                rule = BLANK + ''.join(REG)
                 ypos = y.index(INCR)
                 y[ypos] = rule[rule.find(self[ypos]) + 1]
         if EQ in x:
@@ -179,23 +179,23 @@ class TM:
         if self.T("▷▷▷▷", "----", ">>>>", "SCAN_STATE"): return
         if self.T("▷---", "----", ">---", "SCAN_STATE"): return
         if self.T("-.--", "----", "----", "GOTO_FINAL"): return # note: reached end of input
-        if self.T("----", "----", "----", "REJECT"): return
 
     def SCAN_STATE(self):
         if self.T("-.--", "----", ">---", "GOTO_FINAL"): return # note: empty string input
         if self.T("0---", "----", ">---", "CHECK_STATE"): return
-        if self.T("1--H", "E---", "----", "REJECT"): return     # note: restricted to 8-states
+        if self.T("1--Z", "🔥---", "----", "REJECT"): return
         if self.T("1--*", "---+", ">---", "SCAN_STATE"): return
 
     def SCAN_INPUT(self):
         if self.T("1--.", "---0", ">---", "SCAN_INPUT"): return
         if self.T("1--0", "---1", ">---", "SCAN_INPUT"): return
         if self.T("0---", "----", ">---", "CHECK_INPUT"): return
-        if self.T("----", "E---", "----", "REJECT"): return     # note: input not in {0, 1}
+        if self.T("----", "🔥---", "----", "REJECT"): return    # note: input not in {0, 1}
 
     def SCAN_FINAL(self):
         if self.T("1--#", "----", "--->", "SCAN_FINAL"): return # note: marker added to backtrack
         if self.T("0---", "----", ">-->", "SCAN_FINAL"): return
+        if self.T("1--Z", "🔥---", "----", "REJECT"): return
         if self.T("1--*", "---+", ">---", "SCAN_FINAL"): return
         if self.T(".--#", "----", "----", "ACCEPT"): return     # note: no final states
         if self.T(".---", "----", "---<", "CHECK_FINAL"): return
@@ -217,11 +217,11 @@ class TM:
         if self.T("1---", "---.", ">---", "NEXT_STATE"): return
         if self.T("0--.", "---#", ">---", "NEXT_STATE"): return
         if self.T("0--#", "----", ">-->", "SCAN_STATE"): return
-        if self.T("----", "E---", "----", "REJECT"): return
+        if self.T("----", "🔥---", "----", "REJECT"): return
 
     def GET_STATE(self):
         if self.T("0--*", "--*-", "->->", "REWIND_STATE"): return
-        if self.T("1--H", "E---", "----", "REJECT"): return     # note: state not in {A...H}
+        if self.T("1--Z", "🔥---", "----", "REJECT"): return     # note: state not in {A...Z}
         if self.T("1--*", "---+", ">---", "GET_STATE"): return
 
     def GOTO_FINAL(self):
@@ -262,4 +262,4 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
      exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    print(TM(f'{MULTI3}{SEP}{sys.argv[1]}').run())
+    print(TM(f'{XOR}{SEP}{sys.argv[1]}').run())
