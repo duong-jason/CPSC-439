@@ -14,7 +14,6 @@ class TM:
         self._move = STAY
         self._steps = 0
 
-
         # FIX
         self._delta = {
             "SETUP_TAPE": self.SETUP_TAPE,
@@ -83,6 +82,8 @@ class TM:
 
     def __setitem__(self, pos, symbol):
         """Writes a symbol on each tape"""
+        if pos > TAPE_LEN:
+            raise CellFault(pos)
         self._tape[pos][self._head[pos]] = symbol
 
 
@@ -122,68 +123,32 @@ class TM:
             elif move == STAY:
                 pass
             else:
-                raise ValueError
+                raise MoveError
 
 
     def T(self, x, y, z, i):
         x, y, z = map(lambda f: list(f), [x, y, z])
 
-        if self[2] not in list(f'{START}.ABCDEFGH'):
-                exit()
-
-        for index, k in enumerate(x):
-            if k == "*":
-                print(x[index])
-                x[index] = self[index]
-                print(x[index])
-                for index1, p in enumerate(y):
-                    if p == "*":
-                        y[index1] = x[index]
-                    elif p == "+":
-                        print(x[index])
-                        match x[index]:
-                            case '.': y[index1] = "A"
-                            case 'A': y[index1] = "B"
-                            case 'B': y[index1] = "C"
-                            case 'C': y[index1] = "D"
-                            case 'D': y[index1] = "E"
-                            case 'E': y[index1] = "G"
-                            case 'G': y[index1] = "H"
-            if k == "!":
-                for r in range(index + 1, len(x)):
-                    if x[r] == "!":
-                        if self[index] == self[r]:
-                            for q in range(TAPE_LEN):
-                                if y[q] != STAY:
-                                    self[q] = y[q]
-                            self._move = z
-                            self.move()
-                            self.state = i
-                            return True
-        """
         if COPY in x:
             xpos = x.index(COPY)
             x[xpos] = self[xpos]
-            print(xpos, xpos)
             if COPY in y:
                 ypos = y.index(COPY)
                 y[ypos] = self[xpos]
-            elif INCR in y:
+            if INCR in y:
                 rule = '.ABCDEFGH'
                 ypos = y.index(INCR)
-                y[ypos] = rule[min(rule.find(self[ypos]) + 1, len(rule))]
+                y[ypos] = rule[rule.find(self[ypos]) + 1]
         if EQ in x:
-            if all(self[r] for r in [k for k in range(TAPE_LEN) if x[k] == EQ]):
-                for q in range(TAPE_LEN):
-                    if y[q] != STAY:
-                        self[q] = y[q]
+            if all([self[x.index(EQ)] == self[k] for k in range(TAPE_LEN) if x[k] == EQ]):
+                for _ in range(TAPE_LEN):
+                    if y[_] != STAY:
+                        self[_] = y[_]
                     self._move = z
                     self.move()
                     self.state = i
                     return True
-        """
-
-        if self.symbol(x):
+        elif self.symbol(x):
             for q in range(TAPE_LEN):
                 if y[q] != STAY:
                     self[q] = y[q]
@@ -198,44 +163,40 @@ class TM:
         if self.T("#---", ".---", ">>--", "COPY_INPUT"): return
         if self.T("----", "----", ">---", "SETUP_TAPE"): return
 
-
     def COPY_INPUT(self):
-        if self.T("0---", ".0--", ">>--", "COPY_INPUT"): return
-        if self.T("1---", ".1--", ">>--", "COPY_INPUT"): return
         if self.T(".---", "----", "----", "REWIND_INPUT"): return
-
+        if self.T("*---", ".*--", ">>--", "COPY_INPUT"): return
 
     def REWIND_INPUT(self):
         if self.T("-▷--", "----", "----", "REWIND_STATE"): return
         if self.T("----", "----", "-<--", "REWIND_INPUT"): return
 
-
     def REWIND_STATE(self):
         if self.T("▷---", "----", "----", "START"): return
         if self.T("----", "----", "<---", "REWIND_STATE"): return
 
-
     def START(self):
         if self.T("▷▷▷▷", "----", ">>>>", "SCAN_STATE"): return
-        if self.T("▷.--", "----", ">---", "GOTO_FINAL"): return
         if self.T("▷---", "----", ">---", "SCAN_STATE"): return
+        if self.T("-.--", "----", "----", "GOTO_FINAL"): return # note: reached end of input
+        if self.T("----", "----", "----", "REJECT"): return
 
     def SCAN_STATE(self):
         if self.T("-.--", "----", ">---", "GOTO_FINAL"): return # note: empty string input
-        if self.T("1--*", "---+", ">---", "SCAN_STATE"): return
-        if self.T("1--H", "----", "----", "REJECT"): return
         if self.T("0---", "----", ">---", "CHECK_STATE"): return
+        if self.T("1--H", "E---", "----", "REJECT"): return     # note: restricted to 8-states
+        if self.T("1--*", "---+", ">---", "SCAN_STATE"): return
 
     def SCAN_INPUT(self):
         if self.T("1--.", "---0", ">---", "SCAN_INPUT"): return
         if self.T("1--0", "---1", ">---", "SCAN_INPUT"): return
-        if self.T("1--1", "----", "----", "REJECT"): return
         if self.T("0---", "----", ">---", "CHECK_INPUT"): return
+        if self.T("----", "E---", "----", "REJECT"): return     # note: input not in {0, 1}
 
     def SCAN_FINAL(self):
-        if self.T("1--#", "----", "--->", "SCAN_FINAL"): return
-        if self.T("1--*", "---+", ">---", "SCAN_FINAL"): return
+        if self.T("1--#", "----", "--->", "SCAN_FINAL"): return # note: marker added to backtrack
         if self.T("0---", "----", ">-->", "SCAN_FINAL"): return
+        if self.T("1--*", "---+", ">---", "SCAN_FINAL"): return
         if self.T(".--#", "----", "----", "REJECT"): return
         if self.T(".---", "----", "---<", "CHECK_FINAL"): return
 
@@ -252,16 +213,16 @@ class TM:
         if self.T("---#", "----", "----", "REJECT"): return
         if self.T("----", "----", "---<", "CHECK_FINAL"): return
 
-    def GET_STATE(self):
-        if self.T("1--*", "---+", ">---", "GET_STATE"): return
-        if self.T("1--H", "----", "----", "REJECT"): return
-        if self.T("0--*", "--*-", "->->", "REWIND_STATE"): exit()
-
     def NEXT_STATE(self):
         if self.T("1---", "---.", ">---", "NEXT_STATE"): return
-        if self.T("0--.", "---0", ">---", "NEXT_STATE"): return
-        if self.T("0--0", "----", ">-->", "SCAN_STATE"): return
-        if self.T("----", "----", "----", "REJECT"): return
+        if self.T("0--.", "---#", ">---", "NEXT_STATE"): return
+        if self.T("0--#", "----", ">-->", "SCAN_STATE"): return
+        if self.T("----", "E---", "----", "REJECT"): return
+
+    def GET_STATE(self):
+        if self.T("0--*", "--*-", "->->", "REWIND_STATE"): return
+        if self.T("1--H", "E---", "----", "REJECT"): return     # note: state not in {A...H}
+        if self.T("1--*", "---+", ">---", "GET_STATE"): return
 
     def GOTO_FINAL(self):
         if self.T("1---", "---.", ">---", "GOTO_FINAL"): return
@@ -278,20 +239,23 @@ class TM:
         """Executes the turing machine"""
         while True:
             try:
-                os.system('clear')
-                print(self)
-                time.sleep(MEDIUM)
+                # os.system('clear')
+                # print(self)
+                # time.sleep(MEDIUM)
 
+                if self._state not in self._delta:
+                    raise StateError
 
                 self._delta[self._state]()
                 self._steps += 1
-            except KeyError:
-                return f"Invalid State: {self._state}"
-            except ValueError:
-                return f"Invalid Move: {self._move}"
-            except IndexError as pos:
+            except StateError:
+                return f"Undefined State: {self._state}"
+            except MoveError:
+                return f"Undefined Move: {self._move}"
+            except CellFault as pos:
                 return f"Invalid Cell: {pos}"
             except HaltProcess:
+                print(self)
                 return f"\033[93mSteps\033[0m: {self._steps}\n"
 
 
@@ -299,5 +263,4 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
      exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    XOR_TM = TM(f'{TEST}{SEP}{sys.argv[1]}')
-    print(XOR_TM.run())
+    print(TM(f'{MULTI3}{SEP}{sys.argv[1]}').run())
