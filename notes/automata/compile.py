@@ -96,24 +96,34 @@ class TM:
     def state(self, state):
         self._state = state
 
+
     @property
-    def move(self):
+    def direction(self):
         return self._move
 
 
-    @move.setter
-    def move(self, move):
-        self._move = move 
-
-    def symbol(self, action):
-        symbol = [self[i] for i in range(TAPE_LEN)]
-        [symbol.pop(i) and action.pop(i) for i in reversed(range(TAPE_LEN)) if action[i] == STAY]
-        return symbol == action
+    @direction.setter
+    def direction(self, move):
+        self._move = move
 
 
-    def move(self):
+    def symbol(self, read):
+        head = [self[i] for i in range(TAPE_LEN)]
+        [head.pop(i) and read.pop(i) for i in reversed(range(TAPE_LEN)) if read[i] == STAY]
+        return head == read
+
+
+    def write(self, input):
+        for i in range(TAPE_LEN):
+            if input[i] != STAY:
+                self[i] = input[i]
+
+
+    def move(self, direction):
         """Moves the head position on each tape"""
-        for i, move in enumerate(self._move):
+        self.direction = direction
+
+        for i, move in enumerate(self.direction):
             if move == LEFT:
                 self._head[i] = max(0, self._head[i] - 1)
             elif move == RIGHT:
@@ -126,35 +136,31 @@ class TM:
                 raise MoveError
 
 
-    def T(self, x, y, z, i):
-        x, y, z = map(lambda f: list(f), [x, y, z])
-
-        if COPY in x:
-            xpos = x.index(COPY)
-            x[xpos] = self[xpos]
-            if COPY in y:
-                ypos = y.index(COPY)
-                y[ypos] = self[xpos]
-            if INCR in y:
+    def synthesize(self, read, input):
+        if COPY in read:
+            xpos = read.index(COPY)
+            read[xpos] = self[xpos]
+            if COPY in input:
+                ypos = input.index(COPY)
+                input[ypos] = self[xpos]
+            if INCR in input:
+                ypos = input.index(INCR)
                 rule = BLANK + ''.join(REG)
-                ypos = y.index(INCR)
-                y[ypos] = rule[rule.find(self[ypos]) + 1]
-        if EQ in x:
-            if all([self[x.index(EQ)] == self[k] for k in range(TAPE_LEN) if x[k] == EQ]):
-                for _ in range(TAPE_LEN):
-                    if y[_] != STAY:
-                        self[_] = y[_]
-                    self._move = z
-                    self.move()
-                    self.state = i
-                    return True
-        elif self.symbol(x):
-            for q in range(TAPE_LEN):
-                if y[q] != STAY:
-                    self[q] = y[q]
-            self._move = z
-            self.move()
-            self.state = i
+                input[ypos] = rule[rule.find(self[ypos]) + 1]
+
+
+    def T(self, read, input, direction, next_state):
+        read, input, direction = map(lambda f: list(f), [read, input, direction])
+
+        self.synthesize(read, input)
+
+        if EQ in read and \
+            all([self[read.index(EQ)] == self[k] for k in range(TAPE_LEN) if read[k] == EQ]) or \
+            self.symbol(read):
+
+            self.write(input)
+            self.move(direction)
+            self.state = next_state
             return True
         return False
 
@@ -252,8 +258,8 @@ class TM:
                 return f"Undefined State: {self._state}"
             except MoveError:
                 return f"Undefined Move: {self._move}"
-            except CellFault as pos:
-                return f"Invalid Cell: {pos}"
+            except CellFault as index:
+                return f"Invalid Cell: {index}"
             except HaltProcess:
                 return f"\033[93mSteps\033[0m: {self._steps}\n"
 
