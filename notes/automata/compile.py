@@ -14,7 +14,6 @@ class TM:
         self._move = STAY
         self._steps = 0
 
-        # FIX
         self._delta = {
             "SETUP_TAPE": self.SETUP_TAPE,
             "REWIND_STATE": self.REWIND_STATE,
@@ -37,7 +36,6 @@ class TM:
 
     def __str__(self):
         '''Outputs the current tape state'''
-        # FIX
         res = ''
         print('\033[32m' + self._state + '\033[0m')
 
@@ -154,8 +152,7 @@ class TM:
 
         self.synthesize(read, input)
 
-        if EQ in read and \
-            all([self[read.index(EQ)] == self[k] for k in range(TAPE_LEN) if read[k] == EQ]) or \
+        if EQ in read and all([self[read.index(EQ)] == self[k] for k in range(TAPE_LEN) if read[k] == EQ]) or \
             self.symbol(read):
 
             self.write(input)
@@ -185,34 +182,35 @@ class TM:
         if self.T("▷▷▷▷", "----", ">>>>", "SCAN_STATE"): return
         if self.T("▷---", "----", ">---", "SCAN_STATE"): return
         if self.T("-.--", "----", "----", "GOTO_FINAL"): return # note: reached end of input
+        if self.T("----", "∅---", "----", "REJECT"): return
 
     def SCAN_STATE(self):
         if self.T("-.--", "----", ">---", "GOTO_FINAL"): return # note: empty string input
         if self.T("0---", "----", ">---", "CHECK_STATE"): return
-        if self.T("1--Z", "🔥---", "----", "REJECT"): return
+        if self.T("1--Z", "∅---", "----", "REJECT"): return
         if self.T("1--*", "---+", ">---", "SCAN_STATE"): return
 
     def SCAN_INPUT(self):
         if self.T("1--.", "---0", ">---", "SCAN_INPUT"): return
         if self.T("1--0", "---1", ">---", "SCAN_INPUT"): return
         if self.T("0---", "----", ">---", "CHECK_INPUT"): return
-        if self.T("----", "🔥---", "----", "REJECT"): return    # note: input not in {0, 1}
+        if self.T("----", "∅---", "----", "REJECT"): return    # note: input not in {0, 1}
 
     def SCAN_FINAL(self):
         if self.T("1--#", "----", "--->", "SCAN_FINAL"): return # note: marker added to backtrack
         if self.T("0---", "----", ">-->", "SCAN_FINAL"): return
-        if self.T("1--Z", "🔥---", "----", "REJECT"): return
+        if self.T("1--Z", "∅---", "----", "REJECT"): return
         if self.T("1--*", "---+", ">---", "SCAN_FINAL"): return
         if self.T(".--#", "----", "----", "ACCEPT"): return     # note: no final states
         if self.T(".---", "----", "---<", "CHECK_FINAL"): return
 
     def CHECK_STATE(self):
         if self.T("--!!", "----", "--->", "SCAN_INPUT"): return
-        if self.T("----", "----", "--->", "NEXT_STATE"): return
+        if self.T("----", "----", "----", "NEXT_STATE"): return
 
     def CHECK_INPUT(self):
         if self.T("-!-!", "----", "-->>", "GET_STATE"): return
-        if self.T("----", "----", "--->", "NEXT_STATE"): return
+        if self.T("----", "---.", "---<", "NEXT_STATE"): return
 
     def CHECK_FINAL(self):
         if self.T("--!!", "----", "----", "ACCEPT"): return
@@ -222,12 +220,12 @@ class TM:
     def NEXT_STATE(self):
         if self.T("1---", "---.", ">---", "NEXT_STATE"): return
         if self.T("0--.", "---#", ">---", "NEXT_STATE"): return
-        if self.T("0--#", "----", ">-->", "SCAN_STATE"): return
-        if self.T("----", "🔥---", "----", "REJECT"): return
+        if self.T("0--#", "---.", ">---", "SCAN_STATE"): return
+        if self.T("----", "∅---", "----", "REJECT"): return
 
     def GET_STATE(self):
-        if self.T("0--*", "--*-", "->->", "REWIND_STATE"): return
-        if self.T("1--Z", "🔥---", "----", "REJECT"): return     # note: state not in {A...Z}
+        if self.T("0--*", "-🔥*-", "->->", "REWIND_STATE"): return
+        if self.T("1--Z", "∅---", "----", "REJECT"): return     # note: state not in {A...Z}
         if self.T("1--*", "---+", ">---", "GET_STATE"): return
 
     def GOTO_FINAL(self):
@@ -245,9 +243,9 @@ class TM:
         """Executes the turing machine"""
         while True:
             try:
-                os.system('clear')
-                print(self)
-                time.sleep(MEDIUM)
+                # os.system('clear')
+                # print(self)
+                # time.sleep(SLOW)
 
                 if self._state not in self._delta:
                     raise StateError
@@ -261,6 +259,7 @@ class TM:
             except CellFault as index:
                 return f"Invalid Cell: {index}"
             except HaltProcess:
+                print(self)
                 return f"\033[93mSteps\033[0m: {self._steps}\n"
 
 
@@ -268,4 +267,4 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
      exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    print(TM(f'{XOR}{SEP}{sys.argv[1]}').run())
+    print(TM(f'{COUNTER}{SEP}{sys.argv[1]}').run())

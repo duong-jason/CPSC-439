@@ -1,7 +1,7 @@
 from string import ascii_uppercase
 
 TAPE_LEN = 4
-SHOW_HEAD = 1
+SHOW_HEAD = 0
 SLOW, MEDIUM, FAST = 0.5, 0.01, 0.001
 
 # ___SYMBOLS___
