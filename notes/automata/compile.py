@@ -10,13 +10,13 @@ class TM:
     def __init__(self, input_string):
         self._tape = list(map(lambda x: list('▷' + x), [input_string, BLANK, REG[0], BLANK]))
         self._head = [0] * TAPE_LEN
-        self._state = 'SETUP_TAPE'
+        self._state = 'LOAD_TAPE'
         self._move = STAY
         self._steps = 0
 
         self._delta = {
-            "SETUP_TAPE": self.SETUP_TAPE,
-            "REWIND_STATE": self.REWIND_STATE,
+            "LOAD_TAPE": self.LOAD_TAPE,
+            "REWIND_TAPE": self.REWIND_TAPE,
             "REWIND_INPUT": self.REWIND_INPUT,
             "COPY_INPUT": self.COPY_INPUT,
             "START": self.START,
@@ -34,8 +34,15 @@ class TM:
         }
 
 
+    def __del__(self):
+        """Dumps all symbols on the tapes"""
+        while self.T("!!!!", "....", "<<<<", "DUMP"):
+            os.system('clear')
+            print(self)
+            time.sleep(0.01)
+
     def __str__(self):
-        '''Outputs the current tape state'''
+        """Outputs the current tape state"""
         res = ''
         print('\033[32m' + self._state + '\033[0m')
 
@@ -135,6 +142,7 @@ class TM:
 
 
     def synthesize(self, read, input):
+        """Parses the transition symbols"""
         if COPY in read:
             xpos = read.index(COPY)
             read[xpos] = self[xpos]
@@ -143,16 +151,18 @@ class TM:
                 input[ypos] = self[xpos]
             if INCR in input:
                 ypos = input.index(INCR)
-                rule = BLANK + ''.join(REG)
+                rule = BLANK + ''.join(list(VAL.keys()) if self.state == "SCAN_INPUT" else REG)
                 input[ypos] = rule[rule.find(self[ypos]) + 1]
 
 
     def T(self, read, input, direction, next_state):
+        """State transition function"""
         read, input, direction = map(lambda f: list(f), [read, input, direction])
 
         self.synthesize(read, input)
 
         if EQ in read and all([self[read.index(EQ)] == self[k] for k in range(TAPE_LEN) if read[k] == EQ]) or \
+            NEG in read and not all([self[read.index(NEG)] == self[k] for k in range(TAPE_LEN) if read[k] == NEG]) or \
             self.symbol(read):
 
             self.write(input)
@@ -162,58 +172,57 @@ class TM:
         return False
 
 
-    def SETUP_TAPE(self):
+    def LOAD_TAPE(self):
         if self.T("#---", ".---", ">>--", "COPY_INPUT"): return
-        if self.T("----", "----", ">---", "SETUP_TAPE"): return
+        if self.T("----", "----", ">---", "LOAD_TAPE"): return
 
     def COPY_INPUT(self):
-        if self.T(".---", "----", "----", "REWIND_INPUT"): return
-        if self.T("*---", ".*--", ">>--", "COPY_INPUT"): return
+        if self.T(".---", " ---", "----", "REWIND_INPUT"): return
+        if self.T("*---", " *--", ">>--", "COPY_INPUT"): return
 
     def REWIND_INPUT(self):
-        if self.T("-▷--", "----", "----", "REWIND_STATE"): return
+        if self.T("-▷--", "----", "----", "REWIND_TAPE"): return
         if self.T("----", "----", "-<--", "REWIND_INPUT"): return
 
-    def REWIND_STATE(self):
+    def REWIND_TAPE(self):
         if self.T("▷---", "----", "----", "START"): return
-        if self.T("----", "----", "<---", "REWIND_STATE"): return
+        if self.T("----", "----", "<---", "REWIND_TAPE"): return
 
     def START(self):
         if self.T("▷▷▷▷", "----", ">>>>", "SCAN_STATE"): return
         if self.T("▷---", "----", ">---", "SCAN_STATE"): return
         if self.T("-.--", "----", "----", "GOTO_FINAL"): return # note: reached end of input
-        if self.T("----", "∅---", "----", "REJECT"): return
+        if self.T("----", "🔥---", "----", "REJECT"): return
 
     def SCAN_STATE(self):
         if self.T("-.--", "----", ">---", "GOTO_FINAL"): return # note: empty string input
         if self.T("0---", "----", ">---", "CHECK_STATE"): return
-        if self.T("1--Z", "∅---", "----", "REJECT"): return
+        if self.T("1--Z", "🔥---", "----", "REJECT"): return
         if self.T("1--*", "---+", ">---", "SCAN_STATE"): return
 
     def SCAN_INPUT(self):
-        if self.T("1--.", "---0", ">---", "SCAN_INPUT"): return
-        if self.T("1--0", "---1", ">---", "SCAN_INPUT"): return
+        if self.T("1--z", "-🔥--", "----", "REJECT"): return # note: input not in {a...z}
+        if self.T("1--*", "---+", ">---", "SCAN_INPUT"): return
         if self.T("0---", "----", ">---", "CHECK_INPUT"): return
-        if self.T("----", "∅---", "----", "REJECT"): return    # note: input not in {0, 1}
 
     def SCAN_FINAL(self):
         if self.T("1--#", "----", "--->", "SCAN_FINAL"): return # note: marker added to backtrack
         if self.T("0---", "----", ">-->", "SCAN_FINAL"): return
-        if self.T("1--Z", "∅---", "----", "REJECT"): return
+        if self.T("1--Z", "🔥---", "----", "REJECT"): return
         if self.T("1--*", "---+", ">---", "SCAN_FINAL"): return
         if self.T(".--#", "----", "----", "ACCEPT"): return     # note: no final states
         if self.T(".---", "----", "---<", "CHECK_FINAL"): return
 
     def CHECK_STATE(self):
-        if self.T("--!!", "----", "--->", "SCAN_INPUT"): return
+        if self.T("--==", "----", "--->", "SCAN_INPUT"): return
         if self.T("----", "----", "----", "NEXT_STATE"): return
 
     def CHECK_INPUT(self):
-        if self.T("-!-!", "----", "-->>", "GET_STATE"): return
+        if self.T("-=-=", "----", "-->>", "GET_STATE"): return
         if self.T("----", "---.", "---<", "NEXT_STATE"): return
 
     def CHECK_FINAL(self):
-        if self.T("--!!", "----", "----", "ACCEPT"): return
+        if self.T("--==", "----", "----", "ACCEPT"): return
         if self.T("---#", "----", "----", "REJECT"): return
         if self.T("----", "----", "---<", "CHECK_FINAL"): return
 
@@ -221,11 +230,11 @@ class TM:
         if self.T("1---", "---.", ">---", "NEXT_STATE"): return
         if self.T("0--.", "---#", ">---", "NEXT_STATE"): return
         if self.T("0--#", "---.", ">---", "SCAN_STATE"): return
-        if self.T("----", "∅---", "----", "REJECT"): return
+        if self.T("----", "🔥---", "----", "REJECT"): return
 
     def GET_STATE(self):
-        if self.T("0--*", "-🔥*-", "->->", "REWIND_STATE"): return
-        if self.T("1--Z", "∅---", "----", "REJECT"): return     # note: state not in {A...Z}
+        if self.T("0--*", "--*-", "->->", "REWIND_TAPE"): return
+        if self.T("1--Z", "🔥---", "----", "REJECT"): return     # note: state not in {A...Z}
         if self.T("1--*", "---+", ">---", "GET_STATE"): return
 
     def GOTO_FINAL(self):
@@ -234,18 +243,22 @@ class TM:
         if self.T("0--*", "---+", ">---", "GOTO_FINAL"): return
 
     def ACCEPT(self):
-        raise HaltProcess("ACCEPT")
+        if self.T("----", "✅---", "<---", "DUMP"):
+            raise HaltProcess("ACCEPT")
+        self.T("----", "----", "--->", "ACCEPT")
 
     def REJECT(self):
-        raise HaltProcess("REJECT")
+        if self.T("---.", "❌---", "<---", "DUMP"):
+            raise HaltProcess("REJECT")
+        self.T("----", "----", "--->", "REJECT")
 
     def run(self):
         """Executes the turing machine"""
         while True:
             try:
-                # os.system('clear')
-                # print(self)
-                # time.sleep(SLOW)
+                os.system('clear')
+                print(self)
+                time.sleep(0.01)
 
                 if self._state not in self._delta:
                     raise StateError
@@ -258,13 +271,14 @@ class TM:
                 return f"Undefined Move: {self._move}"
             except CellFault as index:
                 return f"Invalid Cell: {index}"
-            except HaltProcess:
-                print(self)
+            except HaltProcess as result:
+                del(self)
                 return f"\033[93mSteps\033[0m: {self._steps}\n"
 
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-     exit(f"ERROR: {sys.argv[0]} <input_string>")
+        exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    print(TM(f'{COUNTER}{SEP}{sys.argv[1]}').run())
+    TM(f'{XOR}{SEP}{sys.argv[1]}').run()
+
