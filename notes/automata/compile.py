@@ -11,7 +11,6 @@ class TM:
         self._tape = list(map(lambda x: list('▷' + x), [input_string, BLANK, REG[0], BLANK]))
         self._head = [0] * TAPE_LEN
         self._state = 'LOAD_TAPE'
-        self._move = STAY
         self._steps = 0
 
         self._delta = {
@@ -96,16 +95,6 @@ class TM:
 
 
     @property
-    def direction(self):
-        return self._move
-
-
-    @direction.setter
-    def direction(self, move):
-        self._move = move
-
-
-    @property
     def steps(self):
         return self._steps
 
@@ -129,9 +118,7 @@ class TM:
 
     def move(self, direction):
         """Moves the head position on each tape"""
-        self.direction = direction
-
-        for i, move in enumerate(self.direction):
+        for i, move in enumerate(direction):
             if move == LEFT:
                 self._head[i] = max(0, self._head[i] - 1)
             elif move == RIGHT:
@@ -265,10 +252,8 @@ class TM:
                 self._steps += 1
             except KeyError:
                 return f"Undefined State: {self.state}"
-            except SymbolError as symbol:
-                return f"Undefined Symbol: {symbol}"
             except MoveError:
-                return f"Undefined Move: {self.direction}"
+                return "Undefined Move"
             except CellFault as index:
                 return f"Invalid Cell: {index}"
             except HaltProcess:
@@ -283,4 +268,3 @@ if __name__ == '__main__':
         exit(f"ERROR: {sys.argv[0]} <input_string>")
 
     TM(f'{XOR}{SEP}{sys.argv[1]}').run()
-

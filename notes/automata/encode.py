@@ -5,6 +5,7 @@ from state import *
 # Computational Model: DFA
 DFA = namedtuple('DFA', ['delta', 'final'])
 
+
 def encode(dfa, binstr=''):
     '''converts DFA model to binary representation'''
     convert = lambda offset: '1' * (offset + 1) + '0'
