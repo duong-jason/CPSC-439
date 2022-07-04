@@ -27,7 +27,7 @@ REG = list(ascii_uppercase)
 class HaltProcess(Exception):
     pass
 
-class StateError(HaltProcess):
+class SymbolError(HaltProcess):
     pass
 
 class MoveError(HaltProcess):

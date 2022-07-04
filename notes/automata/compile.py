@@ -154,8 +154,7 @@ class TM:
                 input[ypos] = self[xpos]
             if INCR in input:
                 ypos = input.index(INCR)
-                rule = BLANK + ''.join(list(VAL.keys()) if self.state == "SCAN_INPUT" else REG)
-                input[ypos] = rule[rule.find(self[ypos]) + 1]
+                input[ypos] = chr(ord(self[ypos]) + 1)
 
 
     def T(self, read, input, direction, next_state):
@@ -200,10 +199,12 @@ class TM:
         if self.T("-.--", "----", ">---", "GOTO_FINAL"): return # note: empty string input
         if self.T("0---", "----", ">---", "CHECK_STATE"): return
         if self.T("1--Z", "-❌--", "----", "REJECT"): return
+        if self.T("1--.", "---A", ">---", "SCAN_STATE"): return
         if self.T("1--*", "---+", ">---", "SCAN_STATE"): return
 
     def SCAN_INPUT(self):
         if self.T("1--z", "-❌--", "----", "REJECT"): return # note: input not in {a...z}
+        if self.T("1--.", "---a", ">---", "SCAN_INPUT"): return
         if self.T("1--*", "---+", ">---", "SCAN_INPUT"): return
         if self.T("0---", "----", ">---", "CHECK_INPUT"): return
 
@@ -211,6 +212,7 @@ class TM:
         if self.T("1--#", "----", "--->", "SCAN_FINAL"): return # note: marker added to backtrack
         if self.T("0---", "----", ">-->", "SCAN_FINAL"): return
         if self.T("1--Z", "-❌--", "----", "REJECT"): return
+        if self.T("1--.", "---A", ">---", "SCAN_FINAL"): return
         if self.T("1--*", "---+", ">---", "SCAN_FINAL"): return
         if self.T(".--#", "-✅--", "----", "ACCEPT"): return     # note: no final states
         if self.T(".---", "----", "---<", "CHECK_FINAL"): return
@@ -237,11 +239,12 @@ class TM:
     def GET_STATE(self):
         if self.T("0--*", "--*-", "->->", "REWIND_TAPE"): return
         if self.T("1--Z", "-❌--", "----", "REJECT"): return     # note: state not in {A...Z}
+        if self.T("1--.", "---A", ">---", "GET_STATE"): return
         if self.T("1--*", "---+", ">---", "GET_STATE"): return
 
     def GOTO_FINAL(self):
-        if self.T("1---", "---.", ">---", "GOTO_FINAL"): return
-        if self.T("0--B", "---#", ">---", "SCAN_FINAL"): return
+        if self.T("1---", "---A", ">---", "GOTO_FINAL"): return
+        if self.T("0--C", "---#", ">---", "SCAN_FINAL"): return
         if self.T("0--*", "---+", ">---", "GOTO_FINAL"): return
 
     def ACCEPT(self):
@@ -262,11 +265,16 @@ class TM:
                 self._steps += 1
             except KeyError:
                 return f"Undefined State: {self.state}"
+            except SymbolError as symbol:
+                return f"Undefined Symbol: {symbol}"
             except MoveError:
                 return f"Undefined Move: {self.direction}"
             except CellFault as index:
                 return f"Invalid Cell: {index}"
             except HaltProcess:
+                os.system('clear')
+                print(self)
+                time.sleep(0.001)
                 return f"\033[93mSteps\033[0m: {self.steps}\n"
 
 
