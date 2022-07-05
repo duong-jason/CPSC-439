@@ -3,7 +3,7 @@
 
 import sys
 import time, os
-from encode import *
+from dfa import *
 
 
 class TM:
@@ -12,12 +12,12 @@ class TM:
         self._state = 'LOAD_TAPE'
         self._head = [0] * TAPE_LEN
         self._steps = 0
-
+        self._name = ['MODEL  ', 'INPUT  ', 'STATE  ', 'MEMORY '] # FIX
         self._delta = {
             "LOAD_TAPE": self.LOAD_TAPE,
+            "COPY_INPUT": self.COPY_INPUT,
             "REWIND_TAPE": self.REWIND_TAPE,
             "REWIND_INPUT": self.REWIND_INPUT,
-            "COPY_INPUT": self.COPY_INPUT,
             "START": self.START,
             "SCAN_STATE": self.SCAN_STATE,
             "SCAN_INPUT": self.SCAN_INPUT,
@@ -32,7 +32,6 @@ class TM:
             "REJECT": self.REJECT
         }
 
-        self._name = ['MODEL  ', 'INPUT  ', 'STATE  ', 'MEMORY ']
 
     def __str__(self):
         """Outputs the current tape state"""
