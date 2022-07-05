@@ -1,7 +1,6 @@
 from string import ascii_uppercase, ascii_lowercase
 
 TAPE_LEN = 4
-SHOW_HEAD = 0
 
 # ___SYMBOLS___
 a, b, c, d, e, f, g, h, i ,j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z = list(ascii_lowercase)
@@ -35,3 +34,15 @@ class MoveError(HaltProcess):
 
 class CellFault(HaltProcess):
     pass
+
+def blue(text):
+    return "\033[96m" + text + "\033[0m"
+
+def red(text):
+    return "\033[91m" + text + "\033[0m"
+
+def green(text):
+    return "\033[32m" + text + "\033[0m"
+
+def yellow(text):
+    return "\033[93m" + text + "\033[0m"

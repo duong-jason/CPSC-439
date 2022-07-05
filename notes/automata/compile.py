@@ -9,8 +9,8 @@ from encode import *
 class TM:
     def __init__(self, input_string):
         self._tape = list(map(lambda x: list('▷' + x), [input_string, BLANK, REG[0], BLANK]))
-        self._head = [0] * TAPE_LEN
         self._state = 'LOAD_TAPE'
+        self._head = [0] * TAPE_LEN
         self._steps = 0
 
         self._delta = {
@@ -32,43 +32,21 @@ class TM:
             "REJECT": self.REJECT
         }
 
+        self._name = ['MODEL  ', 'INPUT  ', 'STATE  ', 'MEMORY ']
 
     def __str__(self):
         """Outputs the current tape state"""
         res = ''
-        print('\033[32m' + self._state + '\033[0m')
 
-        if SHOW_HEAD:
-            for i in range(TAPE_LEN):
-                for j, cell in enumerate(self._tape[i]):
-                    if j == self._head[i]:
-                        res += '\033[91m' + "       v" + '\033[0m'
-                    else:
-                        res += " "
-                res += "\n"
-                res += f"\033[96mMODEL  \033[0m" if i == 0 else \
-                       f"\033[96mINPUT  \033[0m" if i == 1 else \
-                       f"\033[96mSTATE  \033[0m" if i == 2 else \
-                       f"\033[96mMEMORY \033[0m"
-                for k, cell in enumerate(self._tape[i]):
-                    if k == self._head[i]:
-                        res += '\033[91m' + str(cell) + '\033[0m'
-                    else:
-                        res += str(cell)
-                res += "\n"
-        else:
-            for i in range(TAPE_LEN):
-                res += f"\033[96mMODEL  \033[0m" if i == 0 else \
-                       f"\033[96mINPUT  \033[0m" if i == 1 else \
-                       f"\033[96mSTATE  \033[0m" if i == 2 else \
-                       f"\033[96mMEMORY \033[0m"
-                for j, cell in enumerate(self._tape[i]):
-                    if j == self._head[i]:
-                        res += '\033[91m' + str(cell) + '\033[0m'
-                    else:
-                        res += str(cell)
-                res += '\n'
+        print(green(self.state))
+        for i in range(TAPE_LEN):
+            res += f"{blue(self._name[i])}"
+            for k, cell in enumerate(self.tape[i]):
+                res += red(cell) if k == self.head[i] else cell
+            res += "\n"
+
         return res
+
 
     def __getitem__(self, pos):
         '''Returns the symbol on a particular tape'''
@@ -82,6 +60,16 @@ class TM:
         if pos > TAPE_LEN:
             raise CellFault(pos)
         self._tape[pos][self._head[pos]] = symbol
+
+
+    @property
+    def tape(self):
+        return self._tape
+
+
+    @property
+    def head(self):
+        return self._head
 
 
     @property
@@ -246,7 +234,7 @@ class TM:
             try:
                 os.system('clear')
                 print(self)
-                time.sleep(0.001)
+                time.sleep(0.01)
 
                 self._delta[self._state]()
                 self._steps += 1
@@ -260,11 +248,11 @@ class TM:
                 os.system('clear')
                 print(self)
                 time.sleep(0.001)
-                return f"\033[93mSteps\033[0m: {self.steps}\n"
+                return f"{yellow('Steps')}: {self.steps}\n"
 
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         exit(f"ERROR: {sys.argv[0]} <input_string>")
 
-    TM(f'{XOR}{SEP}{sys.argv[1]}').run()
+    print(TM(f'{XOR}{SEP}{sys.argv[1]}').run())
